@@ -25,7 +25,7 @@ logging.basicConfig(level='INFO')
 
 load_figure_template(["cyborg", "darkly", "minty", "cerulean"])
 
-port = 3003
+port = 3000
 
 
 class Runner(dl.BaseServiceRunner):
@@ -158,7 +158,7 @@ def handle_progress(n_clicks, n_intervals, pathname, interval_disabled):
                 disable_interval = True
                 disable_button = False
                 button_text = "Run"
-                progress_val = 0
+                progress_val = 100
                 url_refresh = True
                 url_pathname = urllib.parse.urlparse(pathname).path
             else:
@@ -168,6 +168,20 @@ def handle_progress(n_clicks, n_intervals, pathname, interval_disabled):
     output = [disable_button, button_text, disable_interval, progress_val, url_refresh, url_pathname]
     print(f'sending event: {output}')
     return output
+
+#
+# app_dash.clientside_callback(
+#     """function (select, id) {
+#         if (select) {
+#             console.log(select)
+#         }
+#         return ''
+#     }""",
+#     Output('111', 'children'),
+#     Input('11', 'selectedData'),
+#     State('11', 'id'),
+#     prevent_initial_call=True
+# )
 
 
 @app.get("/insights/hello")
