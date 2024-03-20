@@ -1,3 +1,4 @@
+from fastapi.middleware.cors import CORSMiddleware
 import json
 from concurrent.futures import ThreadPoolExecutor
 import urllib.parse
@@ -67,7 +68,8 @@ class InsightsHandles:
 
     def get(self, dataset_id):
         if dataset_id not in self.insights:
-            self.insights[dataset_id] = Insights(dataset_id=dataset_id, port=port)
+            self.insights[dataset_id] = Insights(
+                dataset_id=dataset_id, port=port)
         print(self.insights)
         return self.insights[dataset_id]
 
@@ -87,6 +89,18 @@ insights_handler = InsightsHandles()
 exporters_handler = ExporterHandles()
 
 app = FastAPI()
+
+origins = [
+    "*",  # allow all
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app_dash = Dash(__name__,
                 external_stylesheets=[dbc.themes.MINTY],

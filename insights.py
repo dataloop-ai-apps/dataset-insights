@@ -102,7 +102,6 @@ class Insights:
 
     def create_html(self):
         divs = dbc.Container(
-            style={'font-family': '"Open Sans", verdana, arial, sans-serif'},
             id='main-container',
             children=[
                 dcc.Location(id='url'),
