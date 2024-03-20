@@ -19,6 +19,7 @@ from fastapi.responses import HTMLResponse
 
 from insights import Insights
 from utils.styles import header_styles
+import subprocess
 
 logger = logging.getLogger('[INSIGHTS]')
 logging.basicConfig(level='INFO')
@@ -65,6 +66,7 @@ class InsightsHandles:
     def get(self, dataset_id):
         if dataset_id not in self.insights:
             self.insights[dataset_id] = Insights(dataset_id=dataset_id, port=port)
+        print(self.insights)
         return self.insights[dataset_id]
 
 
@@ -170,21 +172,16 @@ def handle_progress(n_clicks, n_intervals, pathname, interval_disabled):
     return output
 
 
-@app.get("/insights/hello")
-async def read_index():
-    return {"hellooo": ""}
-
-
 class Settings(pydantic.BaseModel):
     theme: str
 
 
 @app.post("/insights/settings/{dataset_id}")
-async def set_settings(settings: Settings, dataset_id: str):
+async def set_settings(settings, dataset_id: str):
     insights: Insights = insights_handler.get(dataset_id=dataset_id)
-
-    logger.info(f'SETTINGS: body: {settings}')
-    if settings.theme == 'light':
+    print(f'SETTINGS: body: {settings}')
+    print(f'SETTINGS: body: {settings}')
+    if settings.get('theme') == 'light':
         logger.info('SETTINGS: Changing theme to minty')
         app_dash.config.external_stylesheets = [dbc.themes.MINTY]
         insights.settings['theme'] = "minty"

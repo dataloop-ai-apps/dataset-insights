@@ -246,14 +246,6 @@ class Insights:
         divs = dbc.Container(
             children=[
                 dcc.Location(id='url'),
-                dbc.Container(
-                    children=[dbc.Container(children=dbc.Container(children=f"Last Updated: {self.export_date}")),
-                              dbc.Container(children=dbc.Button(children="Run",
-                                                                id="run-button",
-                                                                style={'min-width': '110px'}))
-
-                              ],
-                    style=header_styles),
                 dbc.Container(children=[
                     dcc.Interval(id="progress-interval", n_intervals=0, interval=1 * 1000, disabled=True),
                     dbc.Progress(id="progress-bar", value=0, max=100),
