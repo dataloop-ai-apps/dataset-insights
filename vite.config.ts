@@ -13,13 +13,20 @@ export default defineConfig({
         port: 8084
     },
     optimizeDeps: {
-        include: ['lodash','@dataloop-ai/components','flat','highlight.js','sortablejs', '@dataloop-ai/jssdk'],
+        include: [
+            'lodash',
+            '@dataloop-ai/components',
+            'flat',
+            'highlight.js',
+            'sortablejs',
+            '@dataloop-ai/jssdk'
+        ],
         exclude: ['node_modules', './node_modules', 'dist', './dist']
     },
-    resolve:{
-    alias:{
-        '@': '/src'
-     }
+    resolve: {
+        alias: {
+            '@': '/src'
+        }
     },
     plugins: [viteBasicSslPlugin(), vue()],
     test: {

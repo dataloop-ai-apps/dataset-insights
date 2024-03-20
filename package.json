@@ -1,62 +1,62 @@
 {
-  "name": "dataset-insights",
-  "private": true,
-  "version": "0.0.1",
-  "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc --noEmit --skipLibCheck && vite build",
-    "preview": "vite preview",
-    "lint": "eslint ./src --ext .ts,.vue ",
-    "lint:fix": "eslint ./src --ext .ts,.vue --fix",
-            "lint-staged": "lint-staged",
+    "name": "dataset-insights",
+    "private": true,
+    "version": "0.0.1",
+    "scripts": {
+        "dev": "vite",
+        "build": "vue-tsc --noEmit --skipLibCheck && vite build",
+        "preview": "vite preview",
+        "lint": "eslint ./src --ext .ts,.vue ",
+        "lint:fix": "eslint ./src --ext .ts,.vue --fix",
+        "lint-staged": "lint-staged",
         "test": "vitest",
         "test:coverage": "vitest run --coverage --silent",
         "check-only": "if grep -E -H -r --exclude-dir=.git --exclude-dir=node_modules --exclude=*.json --exclude=*.yml '^(describe|it).only' .; then echo 'Found only in test files' && exit 1; fi"
-  },
-  "dependencies": {
-    "@dataloop-ai/components": "^0.19.261",
-    "@dataloop-ai/jssdk": "^0.0.79",
-    "vue": "^3.4.21",
-    "vue-demi": "^0.13.11"
-  },
-  "devDependencies": {
-    "@types/jsdom": "^21.1.0",
-    "@types/node": "^18.14.2",
-    "@typescript-eslint/eslint-plugin": "^5.20.0",
-    "@typescript-eslint/parser": "^5.20.0",
-    "@vitejs/plugin-basic-ssl": "^1.1.0",
-    "@vitejs/plugin-vue": "^5.0.4",
-    "@vitest/coverage-v8": "^1.4.0",
-    "@vue/eslint-config-prettier": "^7.0.0",
-    "@vue/eslint-config-typescript": "^10.0.0",
-    "eslint": "^8.13.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-member-order": "^0.0.3",
-    "eslint-plugin-prettier": "^4.0.0",
-    "eslint-plugin-vue": "^8.6.0",
-    "jsdom": "^21.1.1",
-    "lint-staged": "^15.2.2",
-    "pre-commit": "^1.2.2",
-    "prettier": "^2.6.2",
-    "typescript": "^4.5.4",
-    "vite": "^5.1.6",
-    "vitest": "^1.4.0",
-    "vitest-canvas-mock": "^0.3.3",
-    "vue-tsc": "^2.0.6"
-  },
-  "lint-staged": {
-    "*.ts": [
-      "prettier --write",
-      "eslint --fix"
-    ],
-    "*.js": [
-      "prettier --write",
-      "eslint --fix"
-    ],
-    "*.vue": [
-      "prettier --write",
-      "eslint --fix"
-    ]
-  },
-  "pre-commit": "lint-staged"
+    },
+    "dependencies": {
+        "@dataloop-ai/components": "^0.19.261",
+        "@dataloop-ai/jssdk": "^0.0.79",
+        "vue": "^3.4.21",
+        "vue-demi": "^0.13.11"
+    },
+    "devDependencies": {
+        "@types/jsdom": "^21.1.0",
+        "@types/node": "^18.14.2",
+        "@typescript-eslint/eslint-plugin": "^5.20.0",
+        "@typescript-eslint/parser": "^5.20.0",
+        "@vitejs/plugin-basic-ssl": "^1.1.0",
+        "@vitejs/plugin-vue": "^5.0.4",
+        "@vitest/coverage-v8": "^1.4.0",
+        "@vue/eslint-config-prettier": "^7.0.0",
+        "@vue/eslint-config-typescript": "^10.0.0",
+        "eslint": "^8.13.0",
+        "eslint-config-prettier": "^8.5.0",
+        "eslint-plugin-member-order": "^0.0.3",
+        "eslint-plugin-prettier": "^4.0.0",
+        "eslint-plugin-vue": "^8.6.0",
+        "jsdom": "^21.1.1",
+        "lint-staged": "^15.2.2",
+        "pre-commit": "^1.2.2",
+        "prettier": "^2.6.2",
+        "typescript": "^4.5.4",
+        "vite": "^5.1.6",
+        "vitest": "^1.4.0",
+        "vitest-canvas-mock": "^0.3.3",
+        "vue-tsc": "^2.0.6"
+    },
+    "lint-staged": {
+        "*.ts": [
+            "prettier --write",
+            "eslint --fix"
+        ],
+        "*.js": [
+            "prettier --write",
+            "eslint --fix"
+        ],
+        "*.vue": [
+            "prettier --write",
+            "eslint --fix"
+        ]
+    },
+    "pre-commit": "lint-staged"
 }
