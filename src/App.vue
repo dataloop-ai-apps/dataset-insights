@@ -19,7 +19,7 @@
                     <DlButton
                         :label="buttonLabel"
                         :disabled="buttonStatus"
-                        outlined
+                        :outlined="buttonStatus"
                         @click="onClick"
                     />
                 </div>
@@ -36,7 +36,13 @@
                 </div>
             </div>
             <div class="container">
-                <iframe ref="contentIframe" class="frame-container"></iframe>
+                <iframe
+                    id="iframe1"
+                    ref="contentIframe"
+                    class="frame-container"
+                    frameBorder="0"
+                    sandbox="allow-scripts allow-same-origin"
+                ></iframe>
             </div>
         </div>
     </DlThemeProvider>
@@ -50,18 +56,21 @@ import {
     DlProgressBar,
     DlSpinner
 } from '@dataloop-ai/components'
-import { DlEvent } from '@dataloop-ai/jssdk'
-import { onMounted } from 'vue'
-import { ref } from 'vue-demi'
+import { DlEvent, ThemeType } from '@dataloop-ai/jssdk'
+import { ref, onMounted, computed, nextTick } from 'vue-demi'
 
 const contentIframe = ref<HTMLIFrameElement | null>(null)
 const isReady = ref<boolean>(false)
-const isDark = ref<boolean>(true)
+const currentTheme = ref<ThemeType>(ThemeType.LIGHT)
 const lastUpdated = ref<string>('Never')
 const buttonStatus = ref<boolean>(false)
 const buttonLabel = ref<string>('Run')
 const datasetId = ref<string>(null)
 const projectId = ref<string>(null)
+
+const isDark = computed<boolean>(() => {
+    return currentTheme.value === ThemeType.DARK
+})
 
 const loadFrame = async (src: string) => {
     contentIframe.value.onload = () => {
@@ -70,7 +79,8 @@ const loadFrame = async (src: string) => {
             buttonStatus.value = false
         }, 5000)
     }
-    contentIframe.value.src = `http://localhost:3003/insights/build/${datasetId.value}`
+
+    contentIframe.value.src = `http://localhost:3000/insights/build/${datasetId.value}?isDark=${isDark.value}`
 }
 
 const triggerMainAppLoad = async () => {
@@ -84,7 +94,7 @@ const triggerMainAppLoad = async () => {
     datasetId.value = dataset?.id ?? null
 
     if (datasetId.value) {
-        loadFrame(`http://localhost:3003/insights/build/${datasetId.value}`)
+        loadFrame(`http://localhost:3000/insights/build/${datasetId.value}`)
     } else {
         console.error('No dataset found to fetch insights')
 
@@ -93,34 +103,18 @@ const triggerMainAppLoad = async () => {
     }
 }
 
-const changeIframeTheme = async (theme) => {
-    fetch(`/insights/settings/${datasetId.value}`, {
-        method: 'POST', // Specify the method
-        headers: {
-            'Content-Type': 'application/json' // Specify the content type
-        },
-        body: JSON.stringify({ theme }) // Convert the JavaScript object to a JSON string
-    })
-        .then((response) => response.json()) // Parse the JSON response
-        .then((data) => {
-            console.log('Success:', data) // Handle success
-        })
-        .catch((error) => {
-            console.error('Error:', error) // Handle errors
-        })
-
-    loadFrame(`http://localhost:3003/insights/build/${datasetId.value}`)
-}
-
 onMounted(() => {
     window.dl.on(DlEvent.READY, async () => {
         const settings = await window.dl.settings.get()
-        changeIframeTheme(settings.theme)
+        currentTheme.value = settings.theme
         window.dl.on(DlEvent.THEME, (data) => {
-            changeIframeTheme(data)
+            currentTheme.value = data
         })
-        await triggerMainAppLoad()
         isReady.value = true
+
+        nextTick(() => {
+            triggerMainAppLoad()
+        })
     })
 })
 
@@ -157,5 +151,7 @@ async function onClick() {
     flex-direction: row;
     justify-content: space-between;
     padding: 10px 0;
+
+    border-bottom: 1px solid var(--dl-color-disabled);
 }
 </style>

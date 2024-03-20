@@ -1,3 +1,4 @@
+from fastapi.middleware.cors import CORSMiddleware
 from concurrent.futures import ThreadPoolExecutor
 import urllib.parse
 import requests
@@ -65,13 +66,26 @@ class InsightsHandles:
 
     def get(self, dataset_id):
         if dataset_id not in self.insights:
-            self.insights[dataset_id] = Insights(dataset_id=dataset_id, port=port)
+            self.insights[dataset_id] = Insights(
+                dataset_id=dataset_id, port=port)
         print(self.insights)
         return self.insights[dataset_id]
 
 
 insights_handler = InsightsHandles()
 app = FastAPI()
+
+origins = [
+    "*",  # allow all
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app_dash = Dash(__name__,
                 external_stylesheets=[dbc.themes.MINTY],
@@ -89,7 +103,8 @@ app_dash.layout = dbc.Container(
                                 ],
                       style=header_styles),
         dbc.Container(children=[
-            dcc.Interval(id="progress-interval", n_intervals=0, interval=1 * 1000, disabled=True),
+            dcc.Interval(id="progress-interval", n_intervals=0,
+                         interval=1 * 1000, disabled=True),
             dbc.Progress(id="progress-bar", value=0, max=100),
         ]), ])
 
@@ -140,7 +155,8 @@ def handle_progress(n_clicks, n_intervals, pathname, interval_disabled):
         button_text = "Run"
         disable_interval = True
     else:
-        insights = insights_handler.get(urllib.parse.urlparse(pathname).path.split('/')[-1])
+        insights = insights_handler.get(
+            urllib.parse.urlparse(pathname).path.split('/')[-1])
         if interval_disabled is True:
             # start the run
             url = f'http://localhost:{port}{pathname}?force=true'
@@ -167,7 +183,8 @@ def handle_progress(n_clicks, n_intervals, pathname, interval_disabled):
                 disable_interval = False
                 disable_button = True
                 button_text = "Fetching..."
-    output = [disable_button, button_text, disable_interval, progress_val, url_refresh, url_pathname]
+    output = [disable_button, button_text, disable_interval,
+              progress_val, url_refresh, url_pathname]
     print(f'sending event: {output}')
     return output
 
@@ -227,7 +244,8 @@ def update_dataset(dataset_id, force=False):
     force = force == 'true'
     insights: Insights = insights_handler.get(dataset_id=dataset_id)
     if insights.divs is None or force is True:
-        logger.info(f'starting to build.. dataset: {dataset_id}, force: {force}')
+        logger.info(
+            f'starting to build.. dataset: {dataset_id}, force: {force}')
         insights.run(force=force)
     app_dash.layout = insights.divs
     return HTMLResponse(requests.get(f'http://localhost:{port}/dash').content, status_code=200)
