@@ -14,7 +14,7 @@
         "check-only": "if grep -E -H -r --exclude-dir=.git --exclude-dir=node_modules --exclude=*.json --exclude=*.yml '^(describe|it).only' .; then echo 'Found only in test files' && exit 1; fi"
     },
     "dependencies": {
-        "@dataloop-ai/components": "^0.19.261",
+        "@dataloop-ai/components": "^0.19.262",
         "@dataloop-ai/jssdk": "^0.0.79",
         "vue": "^3.4.21",
         "vue-demi": "^0.13.11"
