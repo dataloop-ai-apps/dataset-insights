@@ -1,3 +1,4 @@
+import json
 from concurrent.futures import ThreadPoolExecutor
 import urllib.parse
 import requests
@@ -18,6 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 
 from insights import Insights
+from exporter import Exporter
 from utils.styles import header_styles
 import subprocess
 
@@ -70,7 +72,20 @@ class InsightsHandles:
         return self.insights[dataset_id]
 
 
+class ExporterHandles:
+    def __init__(self):
+        self.exporters = dict()
+
+    def get(self, dataset_id):
+        if dataset_id not in self.exporters:
+            self.exporters[dataset_id] = Exporter(dataset_id=dataset_id)
+        print(self.exporters)
+        return self.exporters[dataset_id]
+
+
 insights_handler = InsightsHandles()
+exporters_handler = ExporterHandles()
+
 app = FastAPI()
 
 app_dash = Dash(__name__,
@@ -78,116 +93,28 @@ app_dash = Dash(__name__,
                 suppress_callback_exceptions=True,
                 routes_pathname_prefix="/",
                 requests_pathname_prefix="/dash/")
-app_dash.layout = dbc.Container(
-    children=[
-        dcc.Location(id='url', refresh=False),
-        dbc.Container(children=[dbc.Container(children=dbc.Container(children=f"Preparing")),
-                                dbc.Container(children=dbc.Button(children="Run",
-                                                                  id="run-button",
-                                                                  style={'min-width': '110px'}))
-
-                                ],
-                      style=header_styles),
-        dbc.Container(children=[
-            dcc.Interval(id="progress-interval", n_intervals=0, interval=1 * 1000, disabled=True),
-            dbc.Progress(id="progress-bar", value=0, max=100),
-        ]), ])
-
-
-# Callback to update the content of 'output-container' upon button clicks
-@app_dash.callback(
-    [
-        Output("run-button", "disabled"),
-        Output("run-button", "children"),
-        Output("progress-interval", "disabled"),
-        Output("progress-bar", "value"),
-        Output("url", "refresh"),
-        Output("url", "pathname"),
-
-    ],
-    [
-        Input('run-button', 'n_clicks'),
-        Input('progress-interval', 'n_intervals'),
-        Input('url', 'pathname')
-    ],
-    [State('progress-interval', 'disabled')],
-
-    prevent_initial_call=True
-)
-def handle_progress(n_clicks, n_intervals, pathname, interval_disabled):
-    """
-    Output order [
-    :param n_clicks:
-    :param n_intervals:
-    :param pathname:
-    :param interval_disabled:
-    :return:
-    """
-    pathname = urllib.parse.unquote(pathname)
-    print("n_clicks", n_clicks)
-    print("n_intervals", n_intervals)
-    print("pathname", pathname)
-    print("interval_disabled", interval_disabled)
-
-    disable_button = True
-    button_text = "Run"
-    disable_interval = True
-    url_pathname = urllib.parse.urlparse(pathname).path
-    url_refresh = False
-    progress_val = 0
-    if n_clicks is None:
-        disable_button = False
-        button_text = "Run"
-        disable_interval = True
-    else:
-        insights = insights_handler.get(urllib.parse.urlparse(pathname).path.split('/')[-1])
-        if interval_disabled is True:
-            # start the run
-            url = f'http://localhost:{port}{pathname}?force=true'
-            print(f'calling ur;l: {url}')
-            requests.get(url=url)
-            disable_button = True
-            button_text = "Fetching.."
-            disable_interval = False
-            progress_val = 0
-            # url_refresh = True
-            # url_pathname = urlparse(pathname).path + "?force=true"
-        else:
-            # running, update the progress
-            print(progress_val)
-            progress_val = insights.progress
-            if progress_val >= 100:
-                disable_interval = True
-                disable_button = False
-                button_text = "Run"
-                progress_val = 100
-                url_refresh = True
-                url_pathname = urllib.parse.urlparse(pathname).path
-            else:
-                disable_interval = False
-                disable_button = True
-                button_text = "Fetching..."
-    output = [disable_button, button_text, disable_interval, progress_val, url_refresh, url_pathname]
-    print(f'sending event: {output}')
-    return output
-
-#
-# app_dash.clientside_callback(
-#     """function (select, id) {
-#         if (select) {
-#             console.log(select)
-#         }
-#         return ''
-#     }""",
-#     Output('111', 'children'),
-#     Input('11', 'selectedData'),
-#     State('11', 'id'),
-#     prevent_initial_call=True
-# )
 
 
 class Settings(pydantic.BaseModel):
     theme: str
+
+
+@app.get("/export/status")
+async def export_status(dataset_id: str):
+    exporter: Exporter = exporters_handler.get(dataset_id=dataset_id)
+    status = {
+        'progress': exporter.progress,
+        'export_date': exporter.export_date,
+        'status': exporter.status
+    }
+    return HTMLResponse(json.dumps(status, indent=2), status_code=200)
+
+
+@app.get("/export/run")
+async def export_status(dataset_id: str):
+    exporter: Exporter = exporters_handler.get(dataset_id=dataset_id)
+    exporter.start_export()
+    return HTMLResponse({'status': 'started'}, status_code=200)
 
 
 @app.post("/insights/settings/{dataset_id}")
@@ -207,28 +134,10 @@ async def set_settings(settings, dataset_id: str):
     return HTMLResponse('success', status_code=200)
 
 
-@app.get("/insights/main")
-async def read_index():
-    # return loading html
-    with open('src/loading.html') as f:
-        content = f.read()
-    return HTMLResponse(content, status_code=200)
-
-
-@app.get("/insights")
-def main():
-    with open('src/index.html') as f:
-        page = f.read()
-    return HTMLResponse(page, status_code=200)
-
-
-@app.get("/insights/build/{dataset_id}")
-def update_dataset(dataset_id, force=False):
-    force = force == 'true'
+@app.get("/insights/build")
+def update_dataset(dataset_id, item_id):
     insights: Insights = insights_handler.get(dataset_id=dataset_id)
-    if insights.divs is None or force is True:
-        logger.info(f'starting to build.. dataset: {dataset_id}, force: {force}')
-        insights.run(force=force)
+    insights.run(export_item_id=item_id)
     app_dash.layout = insights.divs
     return HTMLResponse(requests.get(f'http://localhost:{port}/dash').content, status_code=200)
 
