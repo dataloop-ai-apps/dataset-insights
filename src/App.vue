@@ -26,9 +26,9 @@
                 <div>
                     <DlProgressBar
                         label="Progress bar"
+                        :value="progressValue"
                         v-bind="{
                             width: '200px',
-                            value: 0.5,
                             showValue: true,
                             showPercentage: true
                         }"
@@ -65,8 +65,10 @@ const currentTheme = ref<ThemeType>(ThemeType.LIGHT)
 const lastUpdated = ref<string>('Never')
 const buttonStatus = ref<boolean>(false)
 const buttonLabel = ref<string>('Run')
+const progressValue = ref<number>(0)
 const datasetId = ref<string>(null)
 const projectId = ref<string>(null)
+const exportItemId = ref<string>(null)
 
 const isDark = computed<boolean>(() => {
     return currentTheme.value === ThemeType.DARK
@@ -79,22 +81,37 @@ const loadFrame = async (src: string) => {
             buttonStatus.value = false
         }, 5000)
     }
+    await updateStatus()
+    fetch(
+        `http://localhost:3004/insights/build?datasetId=${datasetId.value}&itemId=${exportItemId.value}`
+    )
+    contentIframe.value.src = `http://localhost:3004/dash`
+}
 
-    contentIframe.value.src = `http://localhost:3000/insights/build/${datasetId.value}?isDark=${isDark.value}`
+const updateStatus = async () => {
+    const exportStatus = await fetch(
+        `http://localhost:3004/export/status?datasetId=${datasetId.value}`
+    ).then((res) => res.json())
+    buttonLabel.value = exportStatus.status === 'ready' ? 'Run' : 'Running'
+    buttonStatus.value = exportStatus.status === 'ready' ? false : true
+    lastUpdated.value = exportStatus.exportDate
+    console.log(exportStatus.progress / 100)
+    progressValue.value = exportStatus.progress / 100
+    exportItemId.value = exportStatus.exportItemId
 }
 
 const triggerMainAppLoad = async () => {
-    lastUpdated.value = new Date().toLocaleTimeString()
-    buttonLabel.value = 'Fetching'
-    buttonStatus.value = true
-
     const project = await window.dl.projects.get()
     projectId.value = project?.id ?? null
     const dataset = await window.dl.datasets.get()
     datasetId.value = dataset?.id ?? null
 
+    await updateStatus()
+
     if (datasetId.value) {
-        loadFrame(`http://localhost:3000/insights/build/${datasetId.value}`)
+        loadFrame(
+            `http://localhost:3004/insights/build?datasetId=${datasetId.value}&itemId=${exportItemId.value}`
+        )
     } else {
         console.error('No dataset found to fetch insights')
 
@@ -119,7 +136,16 @@ onMounted(() => {
 })
 
 async function onClick() {
-    await triggerMainAppLoad()
+    fetch(`http://localhost:3004/export/run?datasetId=${datasetId.value}`)
+    await updateStatus()
+    while (buttonStatus.value === true) {
+        console.log('waiting for export to finish')
+        await updateStatus()
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+    }
+    loadFrame(
+        `http://localhost:3004/insights/build?datasetId=${datasetId.value}$itemId=${exportItemId.value}`
+    )
 }
 </script>
 

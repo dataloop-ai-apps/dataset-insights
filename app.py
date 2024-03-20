@@ -29,7 +29,7 @@ logging.basicConfig(level='INFO')
 
 load_figure_template(["cyborg", "darkly", "minty", "cerulean"])
 
-port = 3000
+port = 3004
 
 
 class Runner(dl.BaseServiceRunner):
@@ -69,7 +69,7 @@ class InsightsHandles:
     def get(self, dataset_id):
         if dataset_id not in self.insights:
             self.insights[dataset_id] = Insights(
-                dataset_id=dataset_id, port=port)
+                dataset_id=dataset_id)
         print(self.insights)
         return self.insights[dataset_id]
 
@@ -114,29 +114,33 @@ class Settings(pydantic.BaseModel):
 
 
 @app.get("/export/status")
-async def export_status(dataset_id: str):
-    exporter: Exporter = exporters_handler.get(dataset_id=dataset_id)
+async def export_status(datasetId: str):
+    exporter: Exporter = exporters_handler.get(dataset_id=datasetId)
     status = {
-        'progress': exporter.progress,
-        'export_date': exporter.export_date,
-        'status': exporter.status
+        'progress': int(exporter.progress),
+        'exportDate': exporter.export_date,
+        'status': exporter.status,
+        'exportItemId': exporter.export_item_id
     }
+    logger.info(f"Returning status: {status}")
     return HTMLResponse(json.dumps(status, indent=2), status_code=200)
 
 
 @app.get("/export/run")
-async def export_status(dataset_id: str):
-    exporter: Exporter = exporters_handler.get(dataset_id=dataset_id)
+async def export_status(datasetId: str):
+    exporter: Exporter = exporters_handler.get(dataset_id=datasetId)
+    exporter.status = "starting"
+    exporter.progress = 0
     exporter.start_export()
-    return HTMLResponse({'status': 'started'}, status_code=200)
+    return HTMLResponse(json.dumps({'status': 'started'}), status_code=200)
 
 
-@app.post("/insights/settings/{dataset_id}")
-async def set_settings(settings, dataset_id: str):
-    insights: Insights = insights_handler.get(dataset_id=dataset_id)
-    print(f'SETTINGS: body: {settings}')
-    print(f'SETTINGS: body: {settings}')
-    if settings.get('theme') == 'light':
+@app.post("/insights/settings")
+async def set_settings(datasetId: str, isDark="false"):
+    insights: Insights = insights_handler.get(dataset_id=datasetId)
+    print(f'SETTINGS: body: {isDark}')
+    print(f'SETTINGS: body: {isDark}')
+    if isDark is "false":
         logger.info('SETTINGS: Changing theme to minty')
         app_dash.config.external_stylesheets = [dbc.themes.MINTY]
         insights.settings['theme'] = "minty"
@@ -149,9 +153,9 @@ async def set_settings(settings, dataset_id: str):
 
 
 @app.get("/insights/build")
-def update_dataset(dataset_id, item_id):
-    insights: Insights = insights_handler.get(dataset_id=dataset_id)
-    insights.run(export_item_id=item_id)
+def update_dataset(datasetId, itemId):
+    insights: Insights = insights_handler.get(dataset_id=datasetId)
+    insights.run(export_item_id=itemId)
     app_dash.layout = insights.divs
     return HTMLResponse(requests.get(f'http://localhost:{port}/dash').content, status_code=200)
 

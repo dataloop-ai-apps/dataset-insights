@@ -1,3 +1,5 @@
+import threading
+
 import dtlpy as dl
 import numpy as np
 import datetime
@@ -24,8 +26,8 @@ class Exporter:
         # status
         self.export_date = ""
         self.progress = 0
-        self.status = ""
-
+        self.status = "loading"
+        self.export_item_id = ""
         # start
         self.load()
 
@@ -34,7 +36,8 @@ class Exporter:
         if item is not None:
             self.status = "ready"
             self.progress = 0
-            self.export_date = self.change_iso_date_string(item.created_at)
+            self.export_date = self.change_iso_date_string(item.created_at[:-1])
+            self.export_item_id = item.id
 
     def load(self):
         self.refresh()
@@ -63,7 +66,7 @@ class Exporter:
 
         command = None
         num_tries = 1
-        self.status = 'waiting'
+        self.status = 'running'
         while elapsed < timeout:
             command = dl.commands.get(command_id=command_id)
             if not command.in_progress():
@@ -95,7 +98,9 @@ class Exporter:
         item_id = command.spec['outputItemId']
         annotation_zip_item = self.dataset.items.get(item_id=item_id)
         self.progress = 90
-        self.status = 'building'
+        self.status = 'ready'
+        self.export_item_id = item_id
+        self.export_date = self.change_iso_date_string(annotation_zip_item.created_at[:-1])
         return annotation_zip_item
 
     def start_export(self):
@@ -124,6 +129,9 @@ class Exporter:
                                        client_api=dl.client_api)
         self.update_active_exports(command_id=command.id)
 
+        thread = threading.Thread(target=self.wait_for_command, kwargs={"command_id": command.id})
+        thread.daemon = True
+        thread.start()
         return command.id
 
     def download_export_from_item(self, item):
