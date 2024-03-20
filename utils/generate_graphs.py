@@ -18,6 +18,16 @@ class GraphsCalculator:
         self._fig_scatter_annotation_height_width = None
         self._fig_pie_annotation_attributes = None
 
+    def clear(self):
+        self._fig_histogram_annotation_by_item = None
+        self._fig_pie_annotation_type = None
+        self._fig_bar_annotations_labels = None
+        self._fig_scatter_item_height_width = None
+        self._fig_sunburst_annotation_attribute_by_label = None
+        self._fig_heatmap_annotation_location = None
+        self._fig_scatter_annotation_height_width = None
+        self._fig_pie_annotation_attributes = None
+
     def histogram_annotation_by_item(self, df, settings):
         if self._fig_histogram_annotation_by_item is None:
             group_counts = df.groupby('item_id').size().reset_index(name='counts')

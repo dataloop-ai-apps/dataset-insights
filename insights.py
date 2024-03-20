@@ -13,7 +13,7 @@ import tqdm
 import os
 import io
 
-from dash import dcc
+from dash import dcc, html
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
 
@@ -251,6 +251,7 @@ class Insights:
                     dbc.Progress(id="progress-bar", value=0, max=100),
                 ]),
                 dbc.Container(children=[
+                    # html.Div(id="111", children=""),
                     dbc.Card(children=dcc.Graph(id='11',
                                                 figure=self.gc.histogram_annotation_by_item(df=self.df,
                                                                                             settings=self.settings),
@@ -321,6 +322,7 @@ class Insights:
         self._progress = 95
         self.build_dataframe()
         self._progress = 99
+        self.gc.clear()
         self.divs = self.create_html()
         self._progress = 100
         self._is_running = False
