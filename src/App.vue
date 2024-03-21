@@ -18,8 +18,8 @@
                     </DlTypography>
                     <DlButton
                         :label="buttonLabel"
-                        :disabled="buttonStatus"
-                        :outlined="buttonStatus"
+                        :disabled="operationRunning"
+                        :outlined="operationRunning"
                         @click="onClick"
                     />
                 </div>
@@ -32,6 +32,7 @@
                             showValue: true,
                             showPercentage: true
                         }"
+                        :indeterminate="frameLoadFailed"
                     />
                 </div>
             </div>
@@ -58,54 +59,92 @@ import {
 } from '@dataloop-ai/components'
 import { DlEvent, ThemeType } from '@dataloop-ai/jssdk'
 import { ref, onMounted, computed, nextTick } from 'vue-demi'
+import { debounce } from 'lodash'
 
 const contentIframe = ref<HTMLIFrameElement | null>(null)
 const isReady = ref<boolean>(false)
 const currentTheme = ref<ThemeType>(ThemeType.LIGHT)
 const lastUpdated = ref<string>('Never')
-const buttonStatus = ref<boolean>(false)
+const operationRunning = ref<boolean>(true)
 const buttonLabel = ref<string>('Run')
 const progressValue = ref<number>(0)
 const datasetId = ref<string>(null)
 const projectId = ref<string>(null)
 const exportItemId = ref<string>(null)
+const frameLoadFailed = ref<boolean>(false)
 
 const isDark = computed<boolean>(() => {
     return currentTheme.value === ThemeType.DARK
 })
 
 const loadFrame = async (src: string) => {
-    contentIframe.value.onload = () => {
-        setTimeout(() => {
+    try {
+        contentIframe.value.onload = () => {
             buttonLabel.value = 'Run'
-            buttonStatus.value = false
-        }, 5000)
+            operationRunning.value = false
+        }
+
+        contentIframe.value.onerror = () => {
+            buttonLabel.value = 'Run'
+            operationRunning.value = false
+            frameLoadFailed.value = true
+        }
+
+        buttonLabel.value = 'Loading'
+        fetch(
+            `http://localhost:3004/insights/build?datasetId=${datasetId.value}&itemId=${exportItemId.value}&theme=${currentTheme.value}`
+        )
+        contentIframe.value.src = `http://localhost:3004/dash`
+    } catch (e) {
+        buttonLabel.value = 'Run'
+        operationRunning.value = false
+        frameLoadFailed.value = true
     }
-    await updateStatus()
-    fetch(
-        `http://localhost:3004/insights/build?datasetId=${datasetId.value}&itemId=${exportItemId.value}`
-    )
-    contentIframe.value.src = `http://localhost:3004/dash`
 }
 
 const updateStatus = async () => {
-    try {
-        const exportStatus = await fetch(
-            `http://localhost:3004/export/status?datasetId=${datasetId.value}`
-        )
-        if (!exportStatus.ok) {
-            throw new Error(`HTTP error! status: ${exportStatus.status}`)
-        }
-        const data = await exportStatus.json()
-        buttonLabel.value = data.status === 'ready' ? 'Run' : 'Running'
-        buttonStatus.value = data.status === 'ready' ? false : true
-        lastUpdated.value = data.exportDate
-        console.log(data.progress / 100)
-        progressValue.value = data.progress / 100
-        exportItemId.value = data.exportItemId
-    } catch (err) {
-        console.error('Error fetching export status:', err)
+    const exportStatus = await fetch(
+        `http://localhost:3004/export/status?datasetId=${datasetId.value}`
+    )
+    if (!exportStatus.ok) {
+        throw new Error(`HTTP error! status: ${exportStatus.status}`)
     }
+    const data = await exportStatus.json()
+    if (Object.keys(data).length === 0) {
+        return false
+    }
+
+    if (frameLoadFailed.value) {
+        frameLoadFailed.value = false
+    }
+    lastUpdated.value = data.exportDate
+    progressValue.value = data.progress / 100
+    exportItemId.value = data.exportItemId
+
+    const completed = data.progress === 100
+    return completed
+}
+
+const handleInitialFrameLoading = async () => {
+    try {
+        if (datasetId.value) {
+            const existingStatus = await updateStatus()
+            if (!existingStatus) {
+                await pollStatus()
+            }
+
+            return loadFrame(
+                `http://localhost:3004/insights/build?datasetId=${datasetId.value}&itemId=${exportItemId.value}&theme=${currentTheme.value}`
+            )
+        } else {
+            console.error('No dataset found to fetch insights')
+        }
+    } catch (e) {
+        console.error('Error fetching insights', e)
+    }
+
+    buttonLabel.value = 'Run'
+    operationRunning.value = false
 }
 
 const triggerMainAppLoad = async () => {
@@ -114,18 +153,8 @@ const triggerMainAppLoad = async () => {
     const dataset = await window.dl.datasets.get()
     datasetId.value = dataset?.id ?? null
 
-    await updateStatus()
-
-    if (datasetId.value) {
-        loadFrame(
-            `http://localhost:3004/insights/build?datasetId=${datasetId.value}&itemId=${exportItemId.value}`
-        )
-    } else {
-        console.error('No dataset found to fetch insights')
-
-        buttonLabel.value = 'Run'
-        buttonStatus.value = false
-    }
+    buttonLabel.value = 'Running'
+    operationRunning.value = true
 }
 
 onMounted(() => {
@@ -138,28 +167,63 @@ onMounted(() => {
         isReady.value = true
 
         nextTick(() => {
-            triggerMainAppLoad()
+            triggerMainAppLoad().then(() => {
+                nextTick(() => {
+                    handleInitialFrameLoading()
+                })
+            })
         })
     })
 })
 
-async function onClick() {
+const pollStatus = async () => {
+    const interval = 1000
+    const maxAttempts = 300 // max 5 minutes
+    let attempts = 0
+
+    return new Promise<boolean>((resolve, reject) => {
+        const intervalId = setInterval(async () => {
+            attempts++
+            const completed = await updateStatus()
+            if (completed) {
+                clearInterval(intervalId)
+                resolve(true)
+            } else if (attempts >= maxAttempts) {
+                clearInterval(intervalId)
+                reject(new Error('Max attempts reached'))
+            }
+        }, interval)
+    })
+}
+
+const runDatasetInsightGeneration = async () => {
     fetch(`http://localhost:3004/export/run?datasetId=${datasetId.value}`)
-    await updateStatus()
-    while (buttonStatus.value === true) {
-        console.log('waiting for export to finish')
-        await updateStatus()
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-    }
+    await pollStatus()
     loadFrame(
-        `http://localhost:3004/insights/build?datasetId=${datasetId.value}$itemId=${exportItemId.value}`
+        `http://localhost:3004/insights/build?datasetId=${datasetId.value}$itemId=${exportItemId.value}&theme=${currentTheme.value}`
     )
+}
+
+const debouncedRunDatasetInsightGeneration = debounce(
+    runDatasetInsightGeneration,
+    300
+)
+
+async function onClick() {
+    operationRunning.value = true
+    buttonLabel.value = 'Running'
+    lastUpdated.value = new Date().toString().split(' ').slice(1, 5).join(' ')
+    progressValue.value = 0
+    frameLoadFailed.value = true
+
+    debouncedRunDatasetInsightGeneration()
 }
 </script>
 
 <style scoped>
 .container {
     display: flex;
+    width: 100%;
     height: 100vh;
     justify-content: center;
 }
@@ -170,6 +234,7 @@ async function onClick() {
 
 .container iframe {
     flex: 1 1 auto;
+    width: 100%;
 }
 
 .loading-spinner {

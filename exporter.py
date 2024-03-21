@@ -95,7 +95,7 @@ class Exporter:
         self.remove_active_exports()
         item_id = command.spec['outputItemId']
         annotation_zip_item = self.dataset.items.get(item_id=item_id)
-        self.progress = 90
+        self.progress = 100
         self.status = 'ready'
         self.export_item_id = item_id
         self.export_date = self.change_iso_date_string(annotation_zip_item.created_at[:-1])

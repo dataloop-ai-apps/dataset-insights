@@ -1,16 +1,17 @@
 from fastapi.middleware.cors import CORSMiddleware
 import json
 from concurrent.futures import ThreadPoolExecutor
-import urllib.parse
 import requests
 import pydantic
 import logging
 import uvicorn
 import tqdm
 
-from dash import Dash, dcc, Input, Output, State  # Updated import for dash >= 2.0
+from dash import Dash  # Updated import for dash >= 2.0
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
+from dash_dangerously_set_inner_html import DangerouslySetInnerHTML
+import dash_html_components as html
 
 import dtlpy as dl
 
@@ -21,8 +22,6 @@ from fastapi.responses import HTMLResponse
 
 from insights import Insights
 from exporter import Exporter
-from utils.styles import header_styles
-import subprocess
 
 logger = logging.getLogger('[INSIGHTS]')
 logging.basicConfig(level='INFO')
@@ -117,7 +116,7 @@ class Settings(pydantic.BaseModel):
 async def export_status(datasetId: str):
     exporter: Exporter = exporters_handler.get(dataset_id=datasetId)
     status = {
-        'progress': int(exporter.progress),
+        'progress': 100 if exporter.status == 'ready' else int(exporter.progress),
         'exportDate': exporter.export_date,
         'status': exporter.status,
         'exportItemId': exporter.export_item_id
@@ -153,10 +152,29 @@ async def set_settings(datasetId: str, isDark="false"):
 
 
 @app.get("/insights/build")
-def update_dataset(datasetId, itemId):
+def update_dataset(datasetId, itemId, theme):
     insights: Insights = insights_handler.get(dataset_id=datasetId)
     insights.run(export_item_id=itemId)
-    app_dash.layout = insights.divs
+
+    # app_dash.layout = dbc.Container(
+    #     id='insights-container',
+    #     children=[
+    #         dcc.RawHtml(
+    #             f"<script>document.documentElement.setAttribute('data-theme', '{theme}'); debugger;</script>"
+    #         ),
+    #         insights.divs
+    #     ]
+    # )
+    app_dash.layout = html.Div(
+        id='main-container',
+        children=[
+            DangerouslySetInnerHTML(
+                '''<script>alert('h');document.documentElement.setAttribute('data-theme', 'darkly');</script>'''),
+        ])
+
+    print('layout', app_dash.layout)
+
+    # app_dash.layout = insights.divs
     return HTMLResponse(requests.get(f'http://localhost:{port}/dash').content, status_code=200)
 
 
