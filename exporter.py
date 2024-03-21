@@ -1,12 +1,10 @@
-import threading
-
 import dtlpy as dl
 import numpy as np
+import threading
 import datetime
 import logging
 import json
 import time
-import os
 import io
 
 from dash_bootstrap_templates import load_figure_template
@@ -133,15 +131,6 @@ class Exporter:
         thread.daemon = True
         thread.start()
         return command.id
-
-    def download_export_from_item(self, item):
-        zip_path = item.download()
-        self.export_date = self.change_iso_date_string(item.created_at[:-1])
-        logger.info(f'changing export_date: {self.export_date}')
-
-        dl.miscellaneous.Zipping.unzip_directory(zip_filename=zip_path,
-                                                 to_directory=self.path)
-        os.remove(zip_path)
 
     def update_active_exports(self, command_id):
         b_dataset = self.dataset.project.datasets._get_binaries_dataset()
