@@ -156,6 +156,7 @@ def update_dataset(datasetId, itemId, theme):
     insights.run(export_item_id=itemId)
     app_dash.layout = html.Div(
         id='main-container',
+        className=['scroll', 'reactive-scroll'],
         children=[
             insights.divs
         ],
