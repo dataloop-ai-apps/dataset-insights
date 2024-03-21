@@ -10,7 +10,6 @@ import tqdm
 from dash import Dash  # Updated import for dash >= 2.0
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
-from dash_dangerously_set_inner_html import DangerouslySetInnerHTML
 import dash_html_components as html
 
 import dtlpy as dl
@@ -155,22 +154,13 @@ async def set_settings(datasetId: str, isDark="false"):
 def update_dataset(datasetId, itemId, theme):
     insights: Insights = insights_handler.get(dataset_id=datasetId)
     insights.run(export_item_id=itemId)
-
-    # app_dash.layout = dbc.Container(
-    #     id='insights-container',
-    #     children=[
-    #         dcc.RawHtml(
-    #             f"<script>document.documentElement.setAttribute('data-theme', '{theme}'); debugger;</script>"
-    #         ),
-    #         insights.divs
-    #     ]
-    # )
     app_dash.layout = html.Div(
         id='main-container',
         children=[
-            DangerouslySetInnerHTML(
-                '''<script>alert('h');document.documentElement.setAttribute('data-theme', 'darkly');</script>'''),
-        ])
+            insights.divs
+        ],
+        **{"data-theme": 'dark-mode' if theme == 'dark' else 'light-mode'}
+    )
 
     print('layout', app_dash.layout)
 

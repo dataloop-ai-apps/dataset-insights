@@ -175,3 +175,15 @@ body {
     font-weight: 400;
     background-color: var(--dl-color-bg);
 }
+
+#main-container {
+    background-color: var(--dl-color-bg);
+}
+
+.dash-graph {
+    background-color: var(--dl-color-panel-background);
+}
+.card {
+    background-color: var(--dl-color-panel-background);
+    border: 1px solid var(--dl-color-separator) !important;
+}

@@ -42,6 +42,7 @@
                     ref="contentIframe"
                     class="frame-container"
                     frameBorder="0"
+                    data-theme="dark-mode"
                     sandbox="allow-scripts allow-same-origin"
                 ></iframe>
             </div>
