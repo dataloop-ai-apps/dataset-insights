@@ -89,15 +89,23 @@ const loadFrame = async (src: string) => {
 }
 
 const updateStatus = async () => {
-    const exportStatus = await fetch(
-        `http://localhost:3004/export/status?datasetId=${datasetId.value}`
-    ).then((res) => res.json())
-    buttonLabel.value = exportStatus.status === 'ready' ? 'Run' : 'Running'
-    buttonStatus.value = exportStatus.status === 'ready' ? false : true
-    lastUpdated.value = exportStatus.exportDate
-    console.log(exportStatus.progress / 100)
-    progressValue.value = exportStatus.progress / 100
-    exportItemId.value = exportStatus.exportItemId
+    try {
+        const exportStatus = await fetch(
+            `http://localhost:3004/export/status?datasetId=${datasetId.value}`
+        )
+        if (!exportStatus.ok) {
+            throw new Error(`HTTP error! status: ${exportStatus.status}`)
+        }
+        const data = await exportStatus.json()
+        buttonLabel.value = data.status === 'ready' ? 'Run' : 'Running'
+        buttonStatus.value = data.status === 'ready' ? false : true
+        lastUpdated.value = data.exportDate
+        console.log(data.progress / 100)
+        progressValue.value = data.progress / 100
+        exportItemId.value = data.exportItemId
+    } catch (err) {
+        console.error('Error fetching export status:', err)
+    }
 }
 
 const triggerMainAppLoad = async () => {
@@ -152,7 +160,6 @@ async function onClick() {
 <style scoped>
 .container {
     display: flex;
-    width: 100%;
     height: 100vh;
     justify-content: center;
 }
@@ -163,7 +170,6 @@ async function onClick() {
 
 .container iframe {
     flex: 1 1 auto;
-    width: 100%;
 }
 
 .loading-spinner {

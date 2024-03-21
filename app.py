@@ -140,7 +140,7 @@ async def set_settings(datasetId: str, isDark="false"):
     insights: Insights = insights_handler.get(dataset_id=datasetId)
     print(f'SETTINGS: body: {isDark}')
     print(f'SETTINGS: body: {isDark}')
-    if isDark is "false":
+    if isDark == "false":
         logger.info('SETTINGS: Changing theme to minty')
         app_dash.config.external_stylesheets = [dbc.themes.MINTY]
         insights.settings['theme'] = "minty"
