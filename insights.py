@@ -34,6 +34,7 @@ class Insights:
         self.df = None
         self.gc = GraphsCalculator()
         self.path = f'tmp/{self.dataset.id}/json'
+        self.build_status = "building"
 
     def download_export_from_item(self, export_item_id):
         item = dl.items.get(item_id=export_item_id)

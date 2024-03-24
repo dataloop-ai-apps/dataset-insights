@@ -150,9 +150,20 @@ async def set_settings(datasetId: str, isDark="false"):
     return HTMLResponse('success', status_code=200)
 
 
+@app.get("/build/status")
+def build_status(datasetId):
+    insights: Insights = insights_handler.get(dataset_id=datasetId)
+    status = {
+        'status': insights.build_status
+    }
+    logger.info(f"Returning status: {status}")
+    return HTMLResponse(json.dumps(status, indent=2), status_code=200)
+
+
 @app.get("/insights/build")
 def update_dataset(datasetId, itemId, theme):
     insights: Insights = insights_handler.get(dataset_id=datasetId)
+    insights.build_status = "building"
     insights.run(export_item_id=itemId)
     app_dash.layout = html.Div(
         id='main-container',
@@ -162,10 +173,8 @@ def update_dataset(datasetId, itemId, theme):
         ],
         **{"data-theme": 'dark-mode' if theme == 'dark' else 'light-mode'}
     )
-
-    print('layout', app_dash.layout)
-
     # app_dash.layout = insights.divs
+    insights.build_status = "ready"
     return HTMLResponse(requests.get(f'http://localhost:{port}/dash').content, status_code=200)
 
 

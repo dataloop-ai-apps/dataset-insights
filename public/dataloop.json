@@ -7,7 +7,7 @@
     "components": {
         "panels": [
             {
-                "name": "insights",
+                "name": "insights-shadi",
                 "supportedSlots": [
                     {
                         "type": "datasetBrowser",
@@ -19,11 +19,11 @@
         ],
         "toolbars": [
             {
-                "displayName": "Insights",
+                "displayName": "Insights Shadi",
                 "icon": "icon-dl-plus",
                 "invoke": {
                     "type": "panel",
-                    "namespace": "insights"
+                    "namespace": "insights-shadi"
                 },
                 "location": "datasetBrowserTab"
             }
@@ -52,7 +52,7 @@
                 "displayName": "insights-runner",
                 "moduleName": "insights",
                 "panelNames": [
-                    "insights"
+                    "insights-shadi"
                 ],
                 "initParams": {},
                 "runtime": {

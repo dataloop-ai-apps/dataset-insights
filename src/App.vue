@@ -36,6 +36,9 @@
                     />
                 </div>
             </div>
+            <div v-if="!buildReady" class="loading-spinner">
+                <DlSpinner text="Loading App..." size="128px" />
+            </div>
             <div class="container">
                 <iframe
                     id="iframe1"
@@ -64,6 +67,7 @@ import { debounce } from 'lodash'
 
 const contentIframe = ref<HTMLIFrameElement | null>(null)
 const isReady = ref<boolean>(false)
+const buildReady = ref<boolean>(true)
 const currentTheme = ref<ThemeType>(ThemeType.LIGHT)
 const lastUpdated = ref<string>('Never')
 const operationRunning = ref<boolean>(true)
@@ -78,7 +82,7 @@ const isDark = computed<boolean>(() => {
     return currentTheme.value === ThemeType.DARK
 })
 
-const loadFrame = async (src: string) => {
+const loadFrame = async () => {
     try {
         contentIframe.value.onload = () => {
             buttonLabel.value = 'Run'
@@ -95,8 +99,12 @@ const loadFrame = async (src: string) => {
         fetch(
             `http://localhost:3004/insights/build?datasetId=${datasetId.value}&itemId=${exportItemId.value}&theme=${currentTheme.value}`
         )
+        buildReady.value = false
+        await pollBuildStatus()
+        buildReady.value = true
         contentIframe.value.src = `http://localhost:3004/dash`
     } catch (e) {
+        console.error('Failed loading frame', e)
         buttonLabel.value = 'Run'
         operationRunning.value = false
         frameLoadFailed.value = true
@@ -126,6 +134,26 @@ const updateStatus = async () => {
     return completed
 }
 
+const getBuildStatus = async () => {
+    const buildStatus = await fetch(
+        `http://localhost:3004/build/status?datasetId=${datasetId.value}`
+    )
+    if (!buildStatus.ok) {
+        throw new Error(`HTTP error! status: ${buildStatus.status}`)
+    }
+    const data = await buildStatus.json()
+    if (Object.keys(data).length === 0) {
+        return false
+    }
+
+    if (frameLoadFailed.value) {
+        frameLoadFailed.value = false
+    }
+
+    const completed = data.status === 'ready'
+    return completed
+}
+
 const handleInitialFrameLoading = async () => {
     try {
         if (datasetId.value) {
@@ -134,9 +162,7 @@ const handleInitialFrameLoading = async () => {
                 await pollStatus()
             }
 
-            return loadFrame(
-                `http://localhost:3004/insights/build?datasetId=${datasetId.value}&itemId=${exportItemId.value}&theme=${currentTheme.value}`
-            )
+            return loadFrame()
         } else {
             console.error('No dataset found to fetch insights')
         }
@@ -164,6 +190,7 @@ onMounted(() => {
         currentTheme.value = settings.theme
         window.dl.on(DlEvent.THEME, (data) => {
             currentTheme.value = data
+            loadFrame()
         })
         isReady.value = true
 
@@ -179,7 +206,7 @@ onMounted(() => {
 
 const pollStatus = async () => {
     const interval = 1000
-    const maxAttempts = 300 // max 5 minutes
+    const maxAttempts = 600 // max 10 minutes
     let attempts = 0
 
     return new Promise<boolean>((resolve, reject) => {
@@ -197,12 +224,30 @@ const pollStatus = async () => {
     })
 }
 
+const pollBuildStatus = async () => {
+    const interval = 1000
+    const maxAttempts = 600 // max 10 minutes
+    let attempts = 0
+
+    return new Promise<boolean>((resolve, reject) => {
+        const intervalId = setInterval(async () => {
+            attempts++
+            const completed = await getBuildStatus()
+            if (completed) {
+                clearInterval(intervalId)
+                resolve(true)
+            } else if (attempts >= maxAttempts) {
+                clearInterval(intervalId)
+                reject(new Error('Max attempts reached'))
+            }
+        }, interval)
+    })
+}
+
 const runDatasetInsightGeneration = async () => {
     fetch(`http://localhost:3004/export/run?datasetId=${datasetId.value}`)
     await pollStatus()
-    loadFrame(
-        `http://localhost:3004/insights/build?datasetId=${datasetId.value}$itemId=${exportItemId.value}&theme=${currentTheme.value}`
-    )
+    loadFrame()
 }
 
 const debouncedRunDatasetInsightGeneration = debounce(
