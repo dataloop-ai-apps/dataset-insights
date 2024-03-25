@@ -1,0 +1,17 @@
+body {
+  height: 100vh;
+  width: 100vw;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+#main-container {
+  background-color: var(--dl-color-bg);
+}
+
+body iframe > * {
+  background-color: var(--dl-color-bg);
+}

@@ -5,4 +5,6 @@
 *.egg-info/
 *.swp
 node_modules
-/tmp
+/tmp*
+/panels*
+/dist*

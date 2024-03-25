@@ -2,18 +2,14 @@ from concurrent.futures import ThreadPoolExecutor
 import dtlpy as dl
 import numpy as np
 import pandas as pd
-import threading
-import requests
-import datetime
 import logging
 import pathlib
 import json
 import time
 import tqdm
 import os
-import io
 
-from dash import dcc, html
+from dash import dcc
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
 
@@ -27,114 +23,22 @@ load_figure_template(["cyborg", "darkly", "minty", "cerulean"])
 
 
 class Insights:
-    def __init__(self, dataset_id, port=3000):
+    def __init__(self, dataset_id):
         super(Insights, self).__init__()
         self.dataset_id = dataset_id
+        self.export_item_id = ''
         self.dataset = dl.datasets.get(dataset_id=self.dataset_id)
         # self.settings = {"theme": "minty"}
         self.settings = {"theme": "darkly"}
-        self.port = port
-        self.dash_app = None
         self.divs = None
         self.df = None
-        self.export_date = None
         self.gc = GraphsCalculator()
-        self._progress = 0
-        self._is_running = False
         self.path = f'tmp/{self.dataset.id}/json'
+        self.build_status = "building"
 
-    @property
-    def progress(self):
-        return self._progress
-
-    @property
-    def is_running(self):
-        return self._is_running
-
-    @staticmethod
-    def change_iso_date_string(iso_datetime):
-        # Parse the ISO 8601 string to a datetime object
-        dt = datetime.datetime.fromisoformat(iso_datetime)
-        # Format the datetime object to a more readable string
-        readable_string = dt.strftime('%B %d, %Y %H:%M:%S')
-        return readable_string
-
-    def wait_for_command(self, command_id):
-        timeout = 0
-        max_sleep_time = 30
-        backoff_factor = 1
-        elapsed = 0
-        start = time.time()
-        if timeout is None or timeout <= 0:
-            timeout = np.inf
-
-        command = None
-        num_tries = 1
-        while elapsed < timeout:
-            command = dl.commands.get(command_id=command_id)
-            if not command.in_progress():
-                break
-            elapsed = time.time() - start
-            sleep_time = np.min([timeout - elapsed, backoff_factor * (2 ** num_tries), max_sleep_time])
-            self._progress = np.minimum(command.progress, 90)
-            num_tries += 1
-            logger.debug("Command {!r} is running for {:.2f}[s] and now Going to sleep {:.2f}[s]".format(command.id,
-                                                                                                         elapsed,
-                                                                                                         sleep_time))
-            time.sleep(sleep_time)
-        if command is None:
-            raise ValueError('Nothing to wait for')
-        if elapsed >= timeout:
-            raise TimeoutError("command wait() got timeout. id: {!r}, status: {}, progress {}%".format(
-                command.id, command.status, command.progress))
-        if command.status != dl.CommandsStatus.SUCCESS:
-            raise dl.exceptions.PlatformException(error='424',
-                                                  message="Command {!r} {}: '{}'".format(command.id,
-                                                                                         command.status,
-                                                                                         command.error))
-
-        if 'outputItemId' not in command.spec:
-            raise dl.exceptions.PlatformException(
-                error='400',
-                message="outputItemId key is missing in command id: {}".format(command_id))
-        self.remove_active_exports()
-        item_id = command.spec['outputItemId']
-        annotation_zip_item = self.dataset.items.get(item_id=item_id)
-        self._progress = 90
-        return annotation_zip_item
-
-    def start_export(self):
-        export_version = dl.ExportVersion.V1
-        payload = dict()
-        # if filters is not None:
-        #     payload['itemsQuery'] = filters.prepare()
-        payload['annotations'] = {
-            "include": True,
-            "convertSemantic": False
-        }
-        payload['exportVersion'] = export_version
-        # if annotation_filters is not None:
-        #     payload['annotationsQuery'] = annotation_filters.prepare()
-        #     payload['annotations']['filter'] = filter_output_annotations
-
-        success, response = dl.client_api.gen_request(req_type='post',
-                                                      path='/datasets/{}/export'.format(self.dataset.id),
-                                                      json_req=payload,
-                                                      headers={'user_query': 'true'})
-        if not success:
-            raise dl.exceptions.PlatformException(response)
-
-        # save command in json
-        command = dl.Command.from_json(_json=response.json(),
-                                       client_api=dl.client_api)
-        self.update_active_exports(command_id=command.id)
-
-        return command.id
-
-    def download_export_from_item(self, item):
+    def download_export_from_item(self, export_item_id):
+        item = dl.items.get(item_id=export_item_id)
         zip_path = item.download()
-        self.export_date = self.change_iso_date_string(item.created_at[:-1])
-        logger.info(f'changing export_date: {self.export_date}')
 
         dl.miscellaneous.Zipping.unzip_directory(zip_filename=zip_path,
                                                  to_directory=self.path)
@@ -197,58 +101,13 @@ class Insights:
         print(f'num annotations: {self.dataset.annotations_count}')
         print(f'num annotations: {self.df.shape[0]}')
 
-    def update_active_exports(self, command_id):
-        b_dataset = self.dataset.project.datasets._get_binaries_dataset()
-        buffer = io.BytesIO()
-        buffer.write(json.dumps({"commandId": command_id}).encode('utf-8'))
-        buffer.name = "active_export.json"
-        b_dataset.items.upload(local_path=buffer,
-                               remote_path=f'/.dataloop/exports/{self.dataset.id}',
-                               overwrite=True)
-
-    def remove_active_exports(self):
-        filters = dl.Filters(use_defaults=False)
-        filters.add(field='filename', values=f'/.dataloop/exports/{self.dataset.id}/active_export.json')
-        filters.page_size = 10
-        b_dataset = self.dataset.project.datasets._get_binaries_dataset()
-        items = b_dataset.items.list(filters=filters)
-        if items.items_count != 0:
-            items.items[0].delete()
-        return True
-
-    def check_active_exports(self):
-        filters = dl.Filters(use_defaults=False)
-        filters.add(field='dir', values=f'/.dataloop/exports/{self.dataset.id}/active_export.json')
-        filters.page_size = 10
-        b_dataset = self.dataset.project.datasets._get_binaries_dataset()
-        items = b_dataset.items.list(filters=filters)
-        if items.items_count != 0:
-            with open(items.items[0].download(overwrite=True)) as f:
-                export_data = json.load(f)
-            return export_data['commandId']
-        else:
-            return None
-
-    def find_last_export(self):
-        filters = dl.Filters(use_defaults=False)
-        filters.add(field='dir', values=f'/.dataloop/exports/{self.dataset.id}')
-        filters.sort_by(field='createdAt', value=dl.FiltersOrderByDirection.DESCENDING)
-        filters.page_size = 10
-        b_dataset = self.dataset.project.datasets._get_binaries_dataset()
-        items = b_dataset.items.list(filters=filters)
-        if items.items_count != 0:
-            return items.items[0]
-        else:
-            return None
-
     def create_html(self):
-        logger.info(f"creating divs for export: {self.export_date}")
         divs = dbc.Container(
-            style={'font-family': '"Open Sans", verdana, arial, sans-serif'},
             id='main-container',
             children=[
                 dcc.Location(id='url'),
-                dbc.Container(children=[
+                dbc.Container(
+                    children=[
                     dbc.Card(children=dcc.Graph(id='11',
                                                 figure=self.gc.histogram_annotation_by_item(df=self.df,
                                                                                             settings=self.settings),
@@ -323,64 +182,14 @@ class Insights:
         )
         return divs
 
-    def async_run_and_refresh(self):
-        self._is_running = True
-        self._progress = 0
-        command_id = self.check_active_exports()
-        if command_id is None:
-            command_id = self.start_export()
-        item = self.wait_for_command(command_id=command_id)
-        self.download_export_from_item(item=item)
-        self._progress = 95
-        self.build_dataframe()
-        self._progress = 99
-        self.gc.clear()
-        self.divs = self.create_html()
-        self._progress = 100
-        self._is_running = False
-
-    def run(self, force):
+    def run(self, export_item_id):
         # first of all - show something
-        self._is_running = True
-        if self.df is None:
-            item = self.find_last_export()
-            if item is None:
-                force = True
-                self.export_date = "No existing export"
-                self.df = pd.DataFrame()
-            else:
-                self.download_export_from_item(item=item)
-                self.build_dataframe()
-
-        if self.check_active_exports() is not None:
-            force = True
-
-        if force is True:
-            thread = threading.Thread(target=self.async_run_and_refresh)
-            thread.daemon = True
-            thread.start()
+        if self.export_item_id == export_item_id:
+            # same export - no need to build everything
+            ...
         else:
-            self._is_running = False
+            self.export_item_id = export_item_id
+            self.download_export_from_item(export_item_id=self.export_item_id)
+            self.build_dataframe()
+            self.gc.clear()
         self.divs = self.create_html()
-
-
-if __name__ == "__main__":
-    import argparse
-    import uvicorn
-    #
-    # parser = argparse.ArgumentParser(description='Description of your program')
-    # parser.add_argument('--port', help='port', required=True)
-    # parser.add_argument('--dataset-id', help='Dataset id', required=True)
-    # args = vars(parser.parse_args())
-    #
-    # dl.setenv('rc')
-    # port = 3008
-    # dataset_id = '5f4d13ba4a958a49a7747cd9'
-    # print('argssssss', args)
-    # insights.dataset_id = args['dataset_id']
-    # print('dataset_id', insights.dataset_id)
-    #
-    # uvicorn.run("insights:app",
-    #             host="0.0.0.0",
-    #             port=args['port'],
-    #             timeout_keep_alive=60)

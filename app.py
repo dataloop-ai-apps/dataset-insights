@@ -1,14 +1,16 @@
+from fastapi.middleware.cors import CORSMiddleware
+import json
 from concurrent.futures import ThreadPoolExecutor
-import urllib.parse
 import requests
 import pydantic
 import logging
 import uvicorn
 import tqdm
 
-from dash import Dash, dcc, Input, Output, State  # Updated import for dash >= 2.0
+from dash import Dash  # Updated import for dash >= 2.0
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
+import dash_html_components as html
 
 import dtlpy as dl
 
@@ -18,14 +20,14 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 
 from insights import Insights
-from utils.styles import header_styles
+from exporter import Exporter
 
 logger = logging.getLogger('[INSIGHTS]')
 logging.basicConfig(level='INFO')
 
 load_figure_template(["cyborg", "darkly", "minty", "cerulean"])
 
-port = 3000
+port = 3004
 
 
 class Runner(dl.BaseServiceRunner):
@@ -64,141 +66,79 @@ class InsightsHandles:
 
     def get(self, dataset_id):
         if dataset_id not in self.insights:
-            self.insights[dataset_id] = Insights(dataset_id=dataset_id, port=port)
+            self.insights[dataset_id] = Insights(
+                dataset_id=dataset_id)
+        print(self.insights)
         return self.insights[dataset_id]
 
 
+class ExporterHandles:
+    def __init__(self):
+        self.exporters = dict()
+
+    def get(self, dataset_id):
+        if dataset_id not in self.exporters:
+            self.exporters[dataset_id] = Exporter(dataset_id=dataset_id)
+        print(self.exporters)
+        return self.exporters[dataset_id]
+
+
 insights_handler = InsightsHandles()
+exporters_handler = ExporterHandles()
+
 app = FastAPI()
+
+origins = [
+    "*",  # allow all
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app_dash = Dash(__name__,
                 external_stylesheets=[dbc.themes.MINTY],
                 suppress_callback_exceptions=True,
                 routes_pathname_prefix="/",
                 requests_pathname_prefix="/dash/")
-app_dash.layout = dbc.Container(
-    children=[
-        dcc.Location(id='url', refresh=False),
-        dbc.Container(children=[dbc.Container(children=dbc.Container(children=f"Preparing")),
-                                dbc.Container(children=dbc.Button(children="Run",
-                                                                  id="run-button",
-                                                                  style={'min-width': '110px'}))
-
-                                ],
-                      style=header_styles),
-        dbc.Container(children=[
-            dcc.Interval(id="progress-interval", n_intervals=0, interval=1 * 1000, disabled=True),
-            dbc.Progress(id="progress-bar", value=0, max=100),
-        ]), ])
-
-
-# Callback to update the content of 'output-container' upon button clicks
-@app_dash.callback(
-    [
-        Output("run-button", "disabled"),
-        Output("run-button", "children"),
-        Output("progress-interval", "disabled"),
-        Output("progress-bar", "value"),
-        Output("url", "refresh"),
-        Output("url", "pathname"),
-
-    ],
-    [
-        Input('run-button', 'n_clicks'),
-        Input('progress-interval', 'n_intervals'),
-        Input('url', 'pathname')
-    ],
-    [State('progress-interval', 'disabled')],
-
-    prevent_initial_call=True
-)
-def handle_progress(n_clicks, n_intervals, pathname, interval_disabled):
-    """
-    Output order [
-    :param n_clicks:
-    :param n_intervals:
-    :param pathname:
-    :param interval_disabled:
-    :return:
-    """
-    pathname = urllib.parse.unquote(pathname)
-    print("n_clicks", n_clicks)
-    print("n_intervals", n_intervals)
-    print("pathname", pathname)
-    print("interval_disabled", interval_disabled)
-
-    disable_button = True
-    button_text = "Run"
-    disable_interval = True
-    url_pathname = urllib.parse.urlparse(pathname).path
-    url_refresh = False
-    progress_val = 0
-    if n_clicks is None:
-        disable_button = False
-        button_text = "Run"
-        disable_interval = True
-    else:
-        insights = insights_handler.get(urllib.parse.urlparse(pathname).path.split('/')[-1])
-        if interval_disabled is True:
-            # start the run
-            url = f'http://localhost:{port}{pathname}?force=true'
-            print(f'calling ur;l: {url}')
-            requests.get(url=url)
-            disable_button = True
-            button_text = "Fetching.."
-            disable_interval = False
-            progress_val = 0
-            # url_refresh = True
-            # url_pathname = urlparse(pathname).path + "?force=true"
-        else:
-            # running, update the progress
-            print(progress_val)
-            progress_val = insights.progress
-            if progress_val >= 100:
-                disable_interval = True
-                disable_button = False
-                button_text = "Run"
-                progress_val = 100
-                url_refresh = True
-                url_pathname = urllib.parse.urlparse(pathname).path
-            else:
-                disable_interval = False
-                disable_button = True
-                button_text = "Fetching..."
-    output = [disable_button, button_text, disable_interval, progress_val, url_refresh, url_pathname]
-    print(f'sending event: {output}')
-    return output
-
-#
-# app_dash.clientside_callback(
-#     """function (select, id) {
-#         if (select) {
-#             console.log(select)
-#         }
-#         return ''
-#     }""",
-#     Output('111', 'children'),
-#     Input('11', 'selectedData'),
-#     State('11', 'id'),
-#     prevent_initial_call=True
-# )
-
-
-@app.get("/insights/hello")
-async def read_index():
-    return {"hellooo": ""}
 
 
 class Settings(pydantic.BaseModel):
     theme: str
 
 
-@app.post("/insights/settings/{dataset_id}")
-async def set_settings(settings: Settings, dataset_id: str):
-    insights: Insights = insights_handler.get(dataset_id=dataset_id)
+@app.get("/export/status")
+async def export_status(datasetId: str):
+    exporter: Exporter = exporters_handler.get(dataset_id=datasetId)
+    status = {
+        'progress': 100 if exporter.status == 'ready' else int(exporter.progress),
+        'exportDate': exporter.export_date,
+        'status': exporter.status,
+        'exportItemId': exporter.export_item_id
+    }
+    logger.info(f"Returning status: {status}")
+    return HTMLResponse(json.dumps(status, indent=2), status_code=200)
 
-    logger.info(f'SETTINGS: body: {settings}')
-    if settings.theme == 'light':
+
+@app.get("/export/run")
+async def export_status(datasetId: str):
+    exporter: Exporter = exporters_handler.get(dataset_id=datasetId)
+    exporter.status = "starting"
+    exporter.progress = 0
+    exporter.start_export()
+    return HTMLResponse(json.dumps({'status': 'started'}), status_code=200)
+
+
+@app.post("/insights/settings")
+async def set_settings(datasetId: str, isDark="false"):
+    insights: Insights = insights_handler.get(dataset_id=datasetId)
+    print(f'SETTINGS: body: {isDark}')
+    print(f'SETTINGS: body: {isDark}')
+    if isDark == "false":
         logger.info('SETTINGS: Changing theme to minty')
         app_dash.config.external_stylesheets = [dbc.themes.MINTY]
         insights.settings['theme'] = "minty"
@@ -210,29 +150,31 @@ async def set_settings(settings: Settings, dataset_id: str):
     return HTMLResponse('success', status_code=200)
 
 
-@app.get("/insights/main")
-async def read_index():
-    # return loading html
-    with open('src/loading.html') as f:
-        content = f.read()
-    return HTMLResponse(content, status_code=200)
+@app.get("/build/status")
+def build_status(datasetId):
+    insights: Insights = insights_handler.get(dataset_id=datasetId)
+    status = {
+        'status': insights.build_status
+    }
+    logger.info(f"Returning status: {status}")
+    return HTMLResponse(json.dumps(status, indent=2), status_code=200)
 
 
-@app.get("/insights")
-def main():
-    with open('src/index.html') as f:
-        page = f.read()
-    return HTMLResponse(page, status_code=200)
-
-
-@app.get("/insights/build/{dataset_id}")
-def update_dataset(dataset_id, force=False):
-    force = force == 'true'
-    insights: Insights = insights_handler.get(dataset_id=dataset_id)
-    if insights.divs is None or force is True:
-        logger.info(f'starting to build.. dataset: {dataset_id}, force: {force}')
-        insights.run(force=force)
-    app_dash.layout = insights.divs
+@app.get("/insights/build")
+def update_dataset(datasetId, itemId, theme):
+    insights: Insights = insights_handler.get(dataset_id=datasetId)
+    insights.build_status = "building"
+    insights.run(export_item_id=itemId)
+    app_dash.layout = html.Div(
+        id='main-container',
+        className=['scroll', 'reactive-scroll'],
+        children=[
+            insights.divs
+        ],
+        **{"data-theme": 'dark-mode' if theme == 'dark' else 'light-mode'}
+    )
+    # app_dash.layout = insights.divs
+    insights.build_status = "ready"
     return HTMLResponse(requests.get(f'http://localhost:{port}/dash').content, status_code=200)
 
 
