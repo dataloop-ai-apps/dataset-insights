@@ -13,7 +13,6 @@ from dash import dcc
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
 
-from utils.styles import container_style, graph_style, card_style, header_styles
 from utils.generate_graphs import GraphsCalculator
 
 logger = logging.getLogger('[INSIGHTS]')
@@ -30,7 +29,7 @@ class Insights:
         self.dataset = dl.datasets.get(dataset_id=self.dataset_id)
         # self.settings = {"theme": "minty"}
         self.settings = {"theme": "darkly"}
-        self.divs = None
+        self.divs = list()
         self.df = None
         self.gc = GraphsCalculator()
         self.path = f'tmp/{self.dataset.id}/json'
@@ -102,84 +101,60 @@ class Insights:
         print(f'num annotations: {self.df.shape[0]}')
 
     def create_html(self):
-        divs = dbc.Container(
-            id='main-container',
-            children=[
-                dcc.Location(id='url'),
-                dbc.Container(
-                    children=[
-                    dbc.Card(children=dcc.Graph(id='11',
-                                                figure=self.gc.histogram_annotation_by_item(df=self.df,
-                                                                                            settings=self.settings),
-                                                className="graph",
-                                                style=graph_style),
-                             style=card_style),
-                    dbc.Card(children=dcc.Graph(id='12',
-                                                style=graph_style,
-                                                className="graph",
-
-                                                figure=self.gc.pie_annotation_type(df=self.df,
-                                                                                   settings=self.settings)),
-                             style=card_style)
-                ],
-                    style=container_style,
-                ),
-                dbc.Container(children=[
-                    dbc.Card(children=dcc.Graph(id='21',
-                                                style=graph_style,
-                                                className="graph",
-
-                                                figure=self.gc.bar_annotations_labels(df=self.df,
-                                                                                      settings=self.settings)),
-                             style=card_style),
-                    dbc.Card(children=dcc.Graph(id='22',
-                                                style=graph_style,
-                                                className="graph",
-
-                                                figure=self.gc.scatter_item_height_width(df=self.df,
-                                                                                         settings=self.settings)),
-                             style=card_style)
-                ],
-                    style=container_style,
-                ),
-                dbc.Container(children=[
-                    dbc.Card(children=dcc.Graph(id='31',
-                                                className="graph",
-
-                                                style=graph_style,
-                                                figure=self.gc.pie_annotation_attributes(df=self.df,
-                                                                                         settings=self.settings)),
-                             style=card_style),
-                    dbc.Card(children=dcc.Graph(id='32',
-                                                className="graph",
-
-                                                style=graph_style,
-                                                figure=self.gc.sunburst_annotation_attribute_by_label(
-                                                    df=self.df, settings=self.settings)),
-                             style=card_style)
-                ],
-                    style=container_style),
-                dbc.Container(children=[
-                    dbc.Card(children=dcc.Graph(id='41',
-                                                className="graph",
-
-                                                style=graph_style,
-                                                figure=self.gc.heatmap_annotation_location(
-                                                    df=self.df,
-                                                    settings=self.settings)),
-                             style=card_style),
-                    dbc.Card(children=dcc.Graph(id='42',
-                                                className="graph",
-
-                                                style=graph_style,
-                                                figure=self.gc.scatter_annotation_height_width(
-                                                    df=self.df,
-                                                    settings=self.settings)),
-                             style=card_style)
-                ],
-                    style=container_style)
-            ]
-        )
+        divs = [
+            # dbc.Container(
+            # id='graphs-container',
+            # className="nothing",
+            # children=
+            # [
+            dbc.Container(className='card-container',
+                          children=[
+                              dbc.Card(children=dcc.Graph(id='graph-1-1',
+                                                          figure=self.gc.histogram_annotation_by_item(df=self.df,
+                                                                                                      settings=self.settings),
+                                                          className="graph")),
+                              dbc.Card(children=dcc.Graph(id='graph-1-2',
+                                                          className="graph",
+                                                          figure=self.gc.pie_annotation_type(df=self.df,
+                                                                                             settings=self.settings)))
+                          ]),
+            dbc.Container(className='card-container',
+                          children=[
+                              dbc.Card(children=dcc.Graph(id='graph-2-1',
+                                                          className="graph",
+                                                          figure=self.gc.bar_annotations_labels(df=self.df,
+                                                                                                settings=self.settings))),
+                              dbc.Card(children=dcc.Graph(id='graph-2-2',
+                                                          className="graph",
+                                                          figure=self.gc.scatter_item_height_width(df=self.df,
+                                                                                                   settings=self.settings)))
+                          ]
+                          ),
+            dbc.Container(className='card-container',
+                          children=[
+                              dbc.Card(children=dcc.Graph(id='graph-3-1',
+                                                          className="graph",
+                                                          figure=self.gc.pie_annotation_attributes(df=self.df,
+                                                                                                   settings=self.settings))),
+                              dbc.Card(children=dcc.Graph(id='graph-3-2',
+                                                          className="graph",
+                                                          figure=self.gc.sunburst_annotation_attribute_by_label(
+                                                              df=self.df, settings=self.settings)))
+                          ], ),
+            dbc.Container(className='card-container',
+                          children=[
+                              dbc.Card(children=dcc.Graph(id='graph-4-1',
+                                                          className="graph",
+                                                          figure=self.gc.heatmap_annotation_location(df=self.df,
+                                                                                                     settings=self.settings))),
+                              dbc.Card(children=dcc.Graph(id='graph-4-2',
+                                                          className="graph",
+                                                          figure=self.gc.scatter_annotation_height_width(
+                                                              df=self.df,
+                                                              settings=self.settings)))
+                          ])
+        ]
+        # ))
         return divs
 
     def run(self, export_item_id):

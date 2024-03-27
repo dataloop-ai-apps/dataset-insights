@@ -45,7 +45,6 @@
                     ref="contentIframe"
                     class="frame-container"
                     frameBorder="0"
-                    data-theme="dark-mode"
                     sandbox="allow-scripts allow-same-origin"
                 ></iframe>
             </div>
@@ -84,9 +83,13 @@ const isDark = computed<boolean>(() => {
 
 const loadFrame = async () => {
     try {
-        contentIframe.value.onload = () => {
+        contentIframe.value.onload = async () => {
             buttonLabel.value = 'Run'
             operationRunning.value = false
+            await checkPlotlyReady()
+            nextTick(() => {
+                changePlotlyTheme(currentTheme.value)
+            })
         }
 
         contentIframe.value.onerror = () => {
@@ -97,12 +100,12 @@ const loadFrame = async () => {
 
         buttonLabel.value = 'Loading'
         fetch(
-            `http://localhost:3004/insights/build?datasetId=${datasetId.value}&itemId=${exportItemId.value}&theme=${currentTheme.value}`
+            `/insights/build?datasetId=${datasetId.value}&itemId=${exportItemId.value}`
         )
         buildReady.value = false
         await pollBuildStatus()
+        contentIframe.value.src = `/dash`
         buildReady.value = true
-        contentIframe.value.src = `http://localhost:3004/dash`
     } catch (e) {
         console.error('Failed loading frame', e)
         buttonLabel.value = 'Run'
@@ -113,7 +116,7 @@ const loadFrame = async () => {
 
 const updateStatus = async () => {
     const exportStatus = await fetch(
-        `http://localhost:3004/export/status?datasetId=${datasetId.value}`
+        `/export/status?datasetId=${datasetId.value}`
     )
     if (!exportStatus.ok) {
         throw new Error(`HTTP error! status: ${exportStatus.status}`)
@@ -136,7 +139,7 @@ const updateStatus = async () => {
 
 const getBuildStatus = async () => {
     const buildStatus = await fetch(
-        `http://localhost:3004/build/status?datasetId=${datasetId.value}`
+        `/build/status?datasetId=${datasetId.value}`
     )
     if (!buildStatus.ok) {
         throw new Error(`HTTP error! status: ${buildStatus.status}`)
@@ -161,8 +164,7 @@ const handleInitialFrameLoading = async () => {
             if (!existingStatus) {
                 await pollStatus()
             }
-
-            return loadFrame()
+            loadFrame()
         } else {
             console.error('No dataset found to fetch insights')
         }
@@ -184,13 +186,81 @@ const triggerMainAppLoad = async () => {
     operationRunning.value = true
 }
 
+const checkPlotlyReady = async () => {
+    return new Promise<boolean>((resolve) => {
+        const interval = setInterval(() => {
+            const iframeDocument =
+                document.getElementById('iframe1').contentWindow.document
+            const mainContainer =
+                iframeDocument.getElementById('main-container')
+            console.log('checking plotly ready', mainContainer)
+            if (mainContainer) {
+                clearInterval(interval)
+                resolve(true)
+            }
+        }, 1000)
+    })
+}
+const changePlotlyTheme = async (theme: ThemeType) => {
+    const iframeDocument =
+        document.getElementById('iframe1').contentWindow.document
+
+    const themes = {
+        light: {
+            plot_bgcolor: 'var(--dl-color-chart-1)', //'#ffffff',
+            paper_bgcolor: '#ffffff',
+            font: {
+                color: '#000000'
+            }
+        },
+        dark: {
+            plot_bgcolor: '#333333',
+            paper_bgcolor: '#333333',
+            font: {
+                color: '#ffffff'
+            }
+        }
+    }
+
+    let newLayout
+    if (theme === 'light') {
+        newLayout = themes.light
+    } else {
+        newLayout = themes.dark
+    }
+
+    const mainContainer = iframeDocument.getElementById('main-container')
+    console.log('changingggg before', mainContainer)
+    mainContainer.setAttribute(
+        'data-theme',
+        theme == 'dark' ? 'dark-mode' : 'light-mode'
+    )
+    console.log('changingggg after', mainContainer)
+    const cols = 2
+    const rows = 4
+    for (let c = 0; c < cols; c++) {
+        for (let r = 0; r < rows; r++) {
+            const gid = `graph-${r + 1}-${c + 1}`
+            console.log(gid)
+            const graphDiv = iframeDocument.getElementById(gid)
+            // graphDiv.style.margin = '16px'
+            console.log(graphDiv)
+            window.Plotly.relayout(graphDiv.children[1], newLayout)
+                .then(function () {
+                    console.log('Layout updated')
+                })
+                .catch(function (error) {
+                    console.error('Error updating layout:', error)
+                })
+        }
+    }
+}
 onMounted(() => {
     window.dl.on(DlEvent.READY, async () => {
         const settings = await window.dl.settings.get()
         currentTheme.value = settings.theme
         window.dl.on(DlEvent.THEME, (data) => {
             currentTheme.value = data
-            loadFrame()
         })
         isReady.value = true
 
@@ -245,7 +315,7 @@ const pollBuildStatus = async () => {
 }
 
 const runDatasetInsightGeneration = async () => {
-    fetch(`http://localhost:3004/export/run?datasetId=${datasetId.value}`)
+    fetch(`/export/run?datasetId=${datasetId.value}`)
     await pollStatus()
     loadFrame()
 }
@@ -267,20 +337,21 @@ async function onClick() {
 </script>
 
 <style scoped>
-.container {
-    display: flex;
-    width: 100%;
+#iframe1 {
+    width: 100vw;
     height: 100vh;
-    justify-content: center;
 }
 
-.container > * {
-    flex: 0 0 auto;
+.container {
+    width: 100vw;
+    height: 100vh;
+    justify-content: center;
+    margin: 0%;
 }
 
 .container iframe {
-    flex: 1 1 auto;
-    width: 100%;
+    width: 100vh;
+    height: 100vh;
 }
 
 .loading-spinner {
@@ -294,7 +365,6 @@ async function onClick() {
     flex-direction: row;
     justify-content: space-between;
     padding: 10px 0;
-
     border-bottom: 1px solid var(--dl-color-disabled);
 }
 </style>

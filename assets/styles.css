@@ -153,26 +153,28 @@
     --dl-json-editor-value-color-string: #98c379;
 }
 
-.scroll{
-    overflow:auto
+.scroll {
+    overflow: auto;
 }
-.scroll::-webkit-scrollbar-thumb{
-    background-color:var(--dl-color-lighter)
+.scroll::-webkit-scrollbar-thumb {
+    background-color: var(--dl-color-lighter);
 }
-@supports (-moz-appearance: none){
-    .scroll{
-        scrollbar-color:var(--dl-color-lighter) transparent
+@supports (-moz-appearance: none) {
+    .scroll {
+        scrollbar-color: var(--dl-color-lighter) transparent;
     }
 }
-.reactive-scroll .scroll::-webkit-scrollbar-thumb{
-    background-color:transparent
+.reactive-scroll .scroll::-webkit-scrollbar-thumb {
+    background-color: transparent;
 }
-.reactive-scroll .scroll:hover::-webkit-scrollbar-thumb{
-    background-color:var(--dl-color-lighter)
+.reactive-scroll .scroll:hover::-webkit-scrollbar-thumb {
+    background-color: var(--dl-color-lighter);
 }
-.scroll,.scroll-x,.scroll-y{
-    -webkit-overflow-scrolling:touch;
-    will-change:scroll-position
+.scroll,
+.scroll-x,
+.scroll-y {
+    -webkit-overflow-scrolling: touch;
+    will-change: scroll-position;
 }
 
 /* CUSTOM STYLES */
@@ -211,4 +213,11 @@ body,
 .card {
     background-color: var(--dl-color-panel-background);
     border: 1px solid var(--dl-color-separator) !important;
+    border-radius: 16px;
+    padding: 16px;
+    margin: 8px;
+}
+.card-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
 }

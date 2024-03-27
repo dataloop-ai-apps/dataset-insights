@@ -48,8 +48,8 @@ def publish_and_install(project, manifest):
 
 if __name__ == "__main__":
     dl.setenv('rc')
-    # project = dl.projects.get(project_name="COCO ors")
-    project = dl.projects.get(project_id="2bb16c5f-081f-4afb-91e0-78699c1b3476")
+    project = dl.projects.get(project_name="COCO ors")
+    # project = dl.projects.get(project_id="2bb16c5f-081f-4afb-91e0-78699c1b3476")
     # bump()
     with open('dataloop.json') as f:
         manifest = json.load(f)

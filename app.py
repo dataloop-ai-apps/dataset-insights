@@ -7,10 +7,9 @@ import logging
 import uvicorn
 import tqdm
 
-from dash import Dash  # Updated import for dash >= 2.0
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
-import dash_html_components as html
+from dash import Dash, dcc, html
 
 import dtlpy as dl
 
@@ -27,15 +26,16 @@ logging.basicConfig(level='INFO')
 
 load_figure_template(["cyborg", "darkly", "minty", "cerulean"])
 
-port = 3004
+port = 3000
 
 
 class Runner(dl.BaseServiceRunner):
     def __init__(self):
         uvicorn.run("app:app",
-                    host="0.0.0.0",
+                    host="0.0.0.0",  # "local.dataloop.ai",
                     port=port,
-                    timeout_keep_alive=60)
+                    timeout_keep_alive=60
+                    )
 
     @staticmethod
     def upload_taco():
@@ -161,25 +161,24 @@ def build_status(datasetId):
 
 
 @app.get("/insights/build")
-def update_dataset(datasetId, itemId, theme):
+def update_dataset(datasetId, itemId):
     insights: Insights = insights_handler.get(dataset_id=datasetId)
     insights.build_status = "building"
     insights.run(export_item_id=itemId)
-    app_dash.layout = html.Div(
+    app_dash.layout = dcc.Loading(children=html.Div(
         id='main-container',
         className=['scroll', 'reactive-scroll'],
-        children=[
-            insights.divs
-        ],
-        **{"data-theme": 'dark-mode' if theme == 'dark' else 'light-mode'}
-    )
-    # app_dash.layout = insights.divs
+        children=[dcc.Location(id='url'),
+                  # html.Div(id='dummy-output', style={'display': 'none'}),
+                  # dcc.Input(id='dummy-input', value=theme, style={'display': 'none'}),
+                  *insights.divs]))
     insights.build_status = "ready"
-    return HTMLResponse(requests.get(f'http://localhost:{port}/dash').content, status_code=200)
+    return HTMLResponse(json.dumps({'status': 'ready'}), status_code=200)
 
 
 app.mount("/dash", WSGIMiddleware(app_dash.server))
 app.mount("/assets", StaticFiles(directory="src"), name="static")
+app.mount("/insights", StaticFiles(directory="insights_panel", html=True), name='insights')
 
 if __name__ == "__main__":
     dl.setenv('rc')

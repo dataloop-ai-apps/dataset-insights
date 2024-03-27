@@ -40,7 +40,7 @@ class GraphsCalculator:
 
         fig.update_layout(xaxis1=dict(title='# Items'),
                           yaxis1=dict(title='# Annotations'),
-                          template=settings['theme'])
+                          )
         # fig.show('browser')
         return fig
 
@@ -65,7 +65,7 @@ class GraphsCalculator:
             self._fig_pie_annotation_type = fig
         else:
             fig = self._fig_pie_annotation_type
-        fig.update_layout(template=settings['theme'])
+
         return fig
 
     def bar_annotations_labels(self, df, settings):
