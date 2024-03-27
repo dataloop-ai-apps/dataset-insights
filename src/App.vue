@@ -261,6 +261,7 @@ onMounted(() => {
         currentTheme.value = settings.theme
         window.dl.on(DlEvent.THEME, (data) => {
             currentTheme.value = data
+            changePlotlyTheme(data)
         })
         isReady.value = true
 
