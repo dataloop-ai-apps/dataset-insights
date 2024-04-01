@@ -6,6 +6,5 @@
 *.swp
 node_modules
 /tmp*
-/panels*
 /dist*
 *.dataloop
