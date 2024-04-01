@@ -154,4 +154,4 @@ def update_dataset(datasetId, itemId):
 
 app.mount("/dash", WSGIMiddleware(app_dash.server))
 app.mount("/assets", StaticFiles(directory="src"), name="static")
-app.mount("/insights", StaticFiles(directory="insights_panel", html=True), name='insights')
+app.mount("/insights", StaticFiles(directory="panels/insights", html=True), name='insights')
