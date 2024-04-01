@@ -1,9 +1,9 @@
 {
-    "version": "0.0.18",
+    "version": "0.0.1",
     "name": "dataset-insights",
     "displayName": "Dataset Insights",
     "description": "",
-    "scope": "project",
+    "scope": "public",
     "components": {
         "panels": [
             {
