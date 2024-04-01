@@ -1,0 +1,70 @@
+{
+    "compilerOptions": {
+      "target": "esnext",
+      "module": "esnext",
+      "sourceRoot": ".",
+      "strict": false,
+      "noImplicitAny": false,
+      "noImplicitThis": true,
+      "alwaysStrict": false,
+      "strictBindCallApply": true,
+      "strictNullChecks": false,
+      "jsx": "preserve",
+      "importHelpers": true,
+      "moduleResolution": "node",
+      "experimentalDecorators": true,
+      "esModuleInterop": true,
+      "isolatedModules": true,
+      "useDefineForClassFields": true,
+      "resolveJsonModule": true,
+      "allowSyntheticDefaultImports": true,
+      "strictPropertyInitialization": false,
+      "skipLibCheck": true,
+      "skipDefaultLibCheck": true,
+      "sourceMap": true,
+      "declaration": true,
+      "declarationMap": true,
+      "incremental": true,
+      "plugins": [
+        {
+          "name": "typescript-tslint-plugin"
+        }
+      ],
+      "baseUrl": ".",
+      "types": [
+        "node",
+        "mocha",
+        "@types/mocha"
+      ],
+      "paths": {
+        "@/*": [
+          "src/*"
+        ]
+      },
+      "lib": [
+        "DOM",
+        "esnext",
+        "dom",
+        "dom.iterable",
+        "scripthost"
+      ]
+    },
+    "include": [
+      "./src/**/*",
+      "./tests"
+    ],
+    "exclude": [
+      "./node_modules/",
+      "./dist/",
+      "node_modules",
+      "node_modules/**/*",
+      "./node_modules",
+      "./node_modules/*",
+      "./node_modules/@types/node/index.d.ts"
+    ],
+    "references": [
+      {
+        "path": "./tsconfig.node.json"
+      }
+    ]
+  }
