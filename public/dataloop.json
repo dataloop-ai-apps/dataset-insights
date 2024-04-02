@@ -1,13 +1,13 @@
 {
     "version": "0.1.3",
-    "name": "dataset-insights",
-    "displayName": "Dataset Insights",
+    "name": "dataset-insights-dev",
+    "displayName": "Dataset Insights Dev",
     "description": "",
     "scope": "project",
     "components": {
         "panels": [
             {
-                "name": "insights-shadi",
+                "name": "insights-dev",
                 "supportedSlots": [
                     {
                         "type": "datasetBrowser",
@@ -19,11 +19,11 @@
         ],
         "toolbars": [
             {
-                "displayName": "Insights Shadi",
+                "displayName": "Insights Dev",
                 "icon": "icon-dl-plus",
                 "invoke": {
                     "type": "panel",
-                    "namespace": "insights-shadi"
+                    "namespace": "insights-dev"
                 },
                 "location": "datasetBrowserTab"
             }
@@ -52,7 +52,7 @@
                 "displayName": "insights-runner",
                 "moduleName": "insights",
                 "panelNames": [
-                    "insights-shadi"
+                    "insights-dev"
                 ],
                 "initParams": {},
                 "runtime": {

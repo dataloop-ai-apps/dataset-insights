@@ -132,6 +132,7 @@ class Exporter:
         buffer = io.BytesIO()
         buffer.write(json.dumps({"commandId": command_id}).encode('utf-8'))
         buffer.name = "active_export.json"
+        logger.info(f"Uploading active_export.json to /.dataloop/exports{self.dataset.id}")
         b_dataset.items.upload(local_path=buffer,
                                remote_path=f'/.dataloop/exports/{self.dataset.id}',
                                overwrite=True)
@@ -157,6 +158,8 @@ class Exporter:
                 export_data = json.load(f)
             return export_data['commandId']
         else:
+            logger.warning("No active exports found")
+            self.start_export()
             return None
 
     def find_last_export(self):
