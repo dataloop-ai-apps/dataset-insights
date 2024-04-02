@@ -1,0 +1,80 @@
+{
+    "version": "0.1.3",
+    "name": "dataset-insights",
+    "displayName": "Dataset Insights",
+    "description": "",
+    "scope": "project",
+    "components": {
+        "panels": [
+            {
+                "name": "insights-shadi",
+                "supportedSlots": [
+                    {
+                        "type": "datasetBrowser",
+                        "configuration": {}
+                    }
+                ],
+                "conditions": {}
+            }
+        ],
+        "toolbars": [
+            {
+                "displayName": "Insights Shadi",
+                "icon": "icon-dl-plus",
+                "invoke": {
+                    "type": "panel",
+                    "namespace": "insights-shadi"
+                },
+                "location": "datasetBrowserTab"
+            }
+        ],
+        "modules": [
+            {
+                "name": "insights",
+                "entryPoint": "app.py",
+                "className": "Runner",
+                "initInputs": [],
+                "config": {
+                    "isCustomServer": true
+                },
+                "functions": [
+                    {
+                        "name": "run",
+                        "output": [],
+                        "input": []
+                    }
+                ]
+            }
+        ],
+        "services": [
+            {
+                "name": "insights-runner",
+                "displayName": "insights-runner",
+                "moduleName": "insights",
+                "panelNames": [
+                    "insights-shadi"
+                ],
+                "initParams": {},
+                "runtime": {
+                    "podType": "regular-s",
+                    "numReplicas": 1,
+                    "concurrency": 10,
+                    "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/main:latest",
+                    "singleAgent": false,
+                    "autoscaler": {
+                        "type": "rabbitmq",
+                        "minReplicas": 1,
+                        "maxReplicas": 1,
+                        "queueLength": 1
+                    },
+                    "preemptible": false,
+                    "executionTimeout": 3600,
+                    "drainTime": 600,
+                    "onReset": "failed",
+                    "runExecutionAsProcess": false
+                },
+                "maxAttempts": 3
+            }
+        ]
+    }
+}
