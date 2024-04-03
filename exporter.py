@@ -44,6 +44,9 @@ class Exporter:
         if command_id is not None:
             self.wait_for_command(command_id=command_id)
             self.refresh()
+        if command_id is None and self.export_item_id == "":
+            logger.warning("No active exports found")
+            self.start_export()
 
     @staticmethod
     def change_iso_date_string(iso_datetime):
@@ -158,8 +161,6 @@ class Exporter:
                 export_data = json.load(f)
             return export_data['commandId']
         else:
-            logger.warning("No active exports found")
-            self.start_export()
             return None
 
     def find_last_export(self):

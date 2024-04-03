@@ -47,6 +47,7 @@ class Insights:
         json_files = list(pathlib.Path(self.path).rglob('*.json'))
 
         def collect_single(path):
+            singles = dict()
             try:
                 with open(path) as f:
                     data = json.load(f)
@@ -61,7 +62,7 @@ class Insights:
                     left = annotation['coordinates'][0]['x']
                     bottom = annotation['coordinates'][1]['y']
                     right = annotation['coordinates'][1]['x']
-                    alls[annotation['id']] = {
+                    singles[annotation['id']] = {
                         'item_id': item_id,
                         'type': annotation['type'],
                         'annotation_id': annotation['id'],
@@ -77,6 +78,24 @@ class Insights:
                         'height': height,
                         'mimetype': mimetype
                     }
+                if len(singles) == 0:
+                    singles[item_id] = {
+                        'item_id': item_id,
+                        'type': 'NA',
+                        'annotation_id': 'NA',
+                        'label': 'NA',
+                        'top': 0,
+                        'left': 0,
+                        'bottom': 0,
+                        'right': 0,
+                        'annotation_height': 0,
+                        'annotation_width': 0,
+                        'attributes': 'NA',
+                        'width': width,
+                        'height': height,
+                        'mimetype': mimetype
+                    }
+                alls.update(singles)
             except Exception as e:
                 print(e)
             finally:
