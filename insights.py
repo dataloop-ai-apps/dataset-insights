@@ -44,10 +44,10 @@ class Insights:
         os.remove(zip_path)
 
     def build_dataframe(self):
-        print('datasettttt', self.dataset.id)
         json_files = list(pathlib.Path(self.path).rglob('*.json'))
 
         def collect_single(path):
+            singles = dict()
             try:
                 with open(path) as f:
                     data = json.load(f)
@@ -62,7 +62,7 @@ class Insights:
                     left = annotation['coordinates'][0]['x']
                     bottom = annotation['coordinates'][1]['y']
                     right = annotation['coordinates'][1]['x']
-                    alls[annotation['id']] = {
+                    singles[annotation['id']] = {
                         'item_id': item_id,
                         'type': annotation['type'],
                         'annotation_id': annotation['id'],
@@ -78,6 +78,24 @@ class Insights:
                         'height': height,
                         'mimetype': mimetype
                     }
+                if len(singles) == 0:
+                    singles[item_id] = {
+                        'item_id': item_id,
+                        'type': 'NA',
+                        'annotation_id': 'NA',
+                        'label': 'NA',
+                        'top': 0,
+                        'left': 0,
+                        'bottom': 0,
+                        'right': 0,
+                        'annotation_height': 0,
+                        'annotation_width': 0,
+                        'attributes': 'NA',
+                        'width': width,
+                        'height': height,
+                        'mimetype': mimetype
+                    }
+                alls.update(singles)
             except Exception as e:
                 print(e)
             finally:
@@ -93,7 +111,6 @@ class Insights:
         print(f'files collection time: {(time.time() - t):.2f}[s]')
         t = time.time()
         self.df = pd.DataFrame(alls.values())
-        # pd.concat({x: pd.Series(y) for x, y in d.items()}).reset_index()
 
         print(f'DataFrame load time: {(time.time() - t):.2f}[s]')
         print(f'num items: {self.dataset.items_count}')
@@ -102,11 +119,6 @@ class Insights:
 
     def create_html(self):
         divs = [
-            # dbc.Container(
-            # id='graphs-container',
-            # className="nothing",
-            # children=
-            # [
             dbc.Container(className='card-container',
                           children=[
                               dbc.Card(children=dcc.Graph(id='graph-1-1',
@@ -159,10 +171,7 @@ class Insights:
 
     def run(self, export_item_id):
         # first of all - show something
-        if self.export_item_id == export_item_id:
-            # same export - no need to build everything
-            ...
-        else:
+        if not self.export_item_id == export_item_id:
             self.export_item_id = export_item_id
             self.download_export_from_item(export_item_id=self.export_item_id)
             self.build_dataframe()
