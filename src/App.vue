@@ -153,6 +153,7 @@ const getBuildStatus = async () => {
 }
 
 const handleInitialFrameLoading = async () => {
+    buildReady.value = false
     try {
         if (datasetId.value) {
             const existingStatus = await updateStatus()
@@ -166,7 +167,7 @@ const handleInitialFrameLoading = async () => {
     } catch (e) {
         console.error('Error fetching insights', e)
     }
-
+    buildReady.value = true
     buttonLabel.value = 'Run'
     operationRunning.value = false
 }

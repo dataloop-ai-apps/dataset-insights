@@ -11,6 +11,7 @@ module.exports = {
         'prettier'
     ],
     plugins: ['eslint-plugin-member-order'],
+    ignorePatterns: ['*.js', '*.py'],
     rules: {
         'getter-return': 'off',
         'vue/valid-v-for': 'off',

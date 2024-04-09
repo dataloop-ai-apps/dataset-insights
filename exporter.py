@@ -44,6 +44,9 @@ class Exporter:
         if command_id is not None:
             self.wait_for_command(command_id=command_id)
             self.refresh()
+        if command_id is None and self.export_item_id == "":
+            logger.warning("No active exports found")
+            self.start_export()
 
     @staticmethod
     def change_iso_date_string(iso_datetime):
@@ -104,16 +107,11 @@ class Exporter:
     def start_export(self):
         export_version = dl.ExportVersion.V1
         payload = dict()
-        # if filters is not None:
-        #     payload['itemsQuery'] = filters.prepare()
         payload['annotations'] = {
             "include": True,
             "convertSemantic": False
         }
         payload['exportVersion'] = export_version
-        # if annotation_filters is not None:
-        #     payload['annotationsQuery'] = annotation_filters.prepare()
-        #     payload['annotations']['filter'] = filter_output_annotations
 
         success, response = dl.client_api.gen_request(req_type='post',
                                                       path='/datasets/{}/export'.format(self.dataset.id),
@@ -137,6 +135,7 @@ class Exporter:
         buffer = io.BytesIO()
         buffer.write(json.dumps({"commandId": command_id}).encode('utf-8'))
         buffer.name = "active_export.json"
+        logger.info(f"Uploading active_export.json to /.dataloop/exports{self.dataset.id}")
         b_dataset.items.upload(local_path=buffer,
                                remote_path=f'/.dataloop/exports/{self.dataset.id}',
                                overwrite=True)
