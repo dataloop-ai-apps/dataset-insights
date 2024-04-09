@@ -40,13 +40,7 @@
                 <DlSpinner text="Loading App..." size="128px" />
             </div>
             <div class="container">
-                <iframe
-                    id="iframe1"
-                    ref="contentIframe"
-                    class="frame-container"
-                    frameBorder="0"
-                    sandbox="allow-scripts allow-same-origin"
-                ></iframe>
+                <EditableDashboard />
             </div>
         </div>
     </DlThemeProvider>
@@ -63,6 +57,7 @@ import {
 import { DlEvent, ThemeType } from '@dataloop-ai/jssdk'
 import { ref, onMounted, computed, nextTick } from 'vue-demi'
 import { debounce } from 'lodash'
+import EditableDashboard from "./components/EditableDashboard.vue";
 
 const contentIframe = ref<HTMLIFrameElement | null>(null)
 const isReady = ref<boolean>(false)
