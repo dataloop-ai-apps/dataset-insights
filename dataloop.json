@@ -5,8 +5,8 @@
   "description": "Provides insights on the dataset",
   "attributes": {
     "Provider": "Dataloop",
-    "Category": "Element",
-    "Element Type": "Studio"
+    "Category": "Application",
+    "Application Type": "Studio"
   },
   "codebase": {
     "type": "git",
