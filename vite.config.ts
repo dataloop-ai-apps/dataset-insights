@@ -7,12 +7,12 @@ import viteBasicSslPlugin from '@vitejs/plugin-basic-ssl'
 // https://vitejs.dev/config/
 export default defineConfig({
     build: {
-        outDir: 'dist'
+        outDir: 'panels/insights'
     },
-    base: '',
+    base: '/insights',
     server: {
-        host: 'local.dataloop.ai',
-        https: true,
+        host: '0.0.0.0',
+        https: false,
         port: 8084
     },
     optimizeDeps: {

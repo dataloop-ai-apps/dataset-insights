@@ -52,9 +52,12 @@ class Insights:
                 with open(path) as f:
                     data = json.load(f)
                 item_id = data['id']
-                height = data.get('metadata', {}).get('system', {}).get('height', 0)
-                width = data.get('metadata', {}).get('system', {}).get('height', 0)
-                mimetype = data.get('metadata', {}).get('system', {}).get('mimetype', '')
+                height = data.get('metadata', {}).get(
+                    'system', {}).get('height', 0)
+                width = data.get('metadata', {}).get(
+                    'system', {}).get('height', 0)
+                mimetype = data.get('metadata', {}).get(
+                    'system', {}).get('mimetype', '')
                 for annotation in data['annotations']:
                     if annotation['type'] != 'box':
                         continue
