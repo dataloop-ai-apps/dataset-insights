@@ -10,15 +10,10 @@ def clean():
     filters = dl.Filters(field='dpkName', values=dpk.name, resource='apps')
 
     for app in dl.apps.list(filters=filters).all():
-        print(app.name, app.project.name)
+        print(app.name, app.project.name, app.scope)
         app.uninstall()
 
     [i.delete() for i in list(dpk.revisions.all())]
-
-
-def bump(bump_type='patch'):
-    print(f"Bump Time: {time.time()}")
-    subprocess.run(f'bumpversion {bump_type} --allow-dirty', shell=True)
 
 
 def publish_and_install(project, manifest):
@@ -30,19 +25,14 @@ def publish_and_install(project, manifest):
     # publish dpk to app store
     dpk = project.dpks.publish(ignore_max_file_size=True)
     print(f'published successfully! dpk name: {dpk.name}, version: {dpk.version}, dpk id: {dpk.id}')
-    try:
-        app = project.apps.get(app_name=dpk.display_name)
-        print(f'already installed, updating...')
-        app.dpk_version = dpk.version
-        app.update()
-        print(f'update done. app id: {app.id}')
-    except dl.exceptions.NotFound:
-        print(f'installing ..')
+    filters = dl.Filters(field='dpkName', values=dpk.name, resource='apps')
 
-        app = project.apps.install(dpk=dpk,
-                                   app_name=dpk.display_name,
-                                   scope=dl.AppScope.SYSTEM)
-        print(f'installed! app id: {app.id}')
+    for app in dl.apps.list(filters=filters).all():
+        print(app.name, app.project.name, app.scope)
+        if app.dpk_version != dpk.version:
+            app.dpk_version = dpk.version
+            app.update()
+            print(f'update done. app id: {app.id}')
     print(f'Done!')
 
 
