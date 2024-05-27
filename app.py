@@ -73,7 +73,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -122,6 +122,15 @@ class Settings(pydantic.BaseModel):
 
 @app.get("/export/status")
 async def export_status(datasetId: str):
+    """
+    Get the export status for a specific dataset.
+
+    Parameters:
+    - datasetId (str): The ID of the dataset.
+
+    Returns:
+    - JSON response with export status, progress, export date, and export item ID.
+    """
     exporter: Exporter = exporters_handler.get(dataset_id=datasetId)
     status = {
         'progress': 100 if exporter.status == 'ready' else int(exporter.progress),
@@ -135,6 +144,15 @@ async def export_status(datasetId: str):
 
 @app.get("/export/run")
 async def export_status(datasetId: str):
+    """
+    Start the export process for a specific dataset.
+
+    Parameters:
+    - datasetId (str): The ID of the dataset.
+
+    Returns:
+    - JSON response indicating that the export has started.
+    """
     exporter: Exporter = exporters_handler.get(dataset_id=datasetId)
     exporter.status = "starting"
     exporter.progress = 0
@@ -144,6 +162,15 @@ async def export_status(datasetId: str):
 
 @app.get("/build/status")
 def build_status(datasetId):
+    """
+    Get the build status for insights of a specific dataset.
+
+    Parameters:
+    - datasetId (str): The ID of the dataset.
+
+    Returns:
+    - JSON response with the build status.
+    """
     insights: Insights = insights_handler.get(dataset_id=datasetId)
     status = {
         'status': insights.build_status
@@ -154,6 +181,16 @@ def build_status(datasetId):
 
 @app.get("/graph/build")
 def update_dataset(datasetId, itemId):
+    """
+    Build the graphs for a specific dataset from exported item.
+
+    Parameters:
+    - datasetId (str): The ID of the dataset.
+    - itemId (str): The ID of the exported item.
+
+    Returns:
+    - JSON response indicating that the build is ready.
+    """
     insights: Insights = insights_handler.get(dataset_id=datasetId)
     insights.build_status = "building"
     insights.run(export_item_id=itemId)
@@ -161,7 +198,9 @@ def update_dataset(datasetId, itemId):
     return HTMLResponse(json.dumps({'status': 'ready'}), status_code=200)
 
 
+# Mount the Dash app at the "/dash" endpoint
 app.mount("/dash", WSGIMiddleware(app_dash.server))
-app.mount("/assets", StaticFiles(directory="src"), name="static")
+
+# Mount static files of build insights at the "/insights" endpoint
 app.mount("/insights", StaticFiles(directory="panels/insights",
           html=True), name='insights')

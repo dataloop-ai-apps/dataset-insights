@@ -190,13 +190,11 @@ const checkPlotlyReady = async () => {
         const interval = setInterval(() => {
             const iframeDocument =
                 document.getElementById('iframe1').contentWindow.document
-            let mainContainer
-            try {
-                mainContainer =
-                    iframeDocument.getElementById('graph-4-2').children[1]
-            } catch (e) {
-                //
-            }
+            const iframeGraph = iframeDocument.getElementById('graph-4-2')
+            const iframeGraphChildren = iframeGraph?.children
+            const mainContainer = iframeGraphChildren?.length
+                ? iframeGraphChildren[1]
+                : null
 
             if (mainContainer) {
                 buildReady.value = true
