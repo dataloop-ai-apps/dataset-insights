@@ -1,5 +1,6 @@
 {
-    "version": "0.1.7",
+
+    "version": "0.1.8",
     "name": "dataset-insights",
     "displayName": "Dataset Insights",
     "description": "Provides insights on the dataset",
@@ -11,7 +12,7 @@
     "codebase": {
         "type": "git",
         "gitUrl": "https://github.com/dataloop-ai-apps/dataset-insights.git",
-        "gitTag": "0.1.7"
+        "gitTag": "0.1.8"
     },
     "scope": "public",
     "components": {
@@ -29,7 +30,7 @@
         ],
         "toolbars": [
             {
-                "displayName": "Insights Local",
+                "displayName": "Insights",
                 "icon": "icon-dl-plus",
                 "invoke": {
                     "type": "panel",
@@ -67,7 +68,7 @@
                     "podType": "regular-s",
                     "numReplicas": 1,
                     "concurrency": 10,
-                    "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/main:latest",
+                    "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/dataset-insights:0.2.7",
                     "singleAgent": false,
                     "autoscaler": {
                         "type": "rabbitmq",

@@ -1,15 +1,14 @@
-Build script
+# Dataset Insights
 
-```bash
+A dataset tab app for insights over a dataset.
 
-# or even more succinctly
-bazel build tensorboard -- --logdir path/to/logs
-```
+## Graphs
 
-Development script
-
-```bash
-
-# or even more succinctly
-ibazel run tensorboard:dev -- --logdir path/to/logs --host 0.0.0.0 --port 3000
-```
+1. Histogram of annotations per item
+2. Pie chart of annotation types
+3. Bar chart of annotation per labels 
+4. Scatter plot of items  height vs width
+5. Pie chart of annotations attributes
+6. Sunburst figure of annotations attribute divided by label
+7. Heatmap of annotations location (only bounding box for now)
+8. Scatter plot of annotations height vs width
