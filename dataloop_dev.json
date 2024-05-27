@@ -29,7 +29,7 @@
         ],
         "toolbars": [
             {
-                "displayName": "Insights",
+                "displayName": "Insights Local",
                 "icon": "icon-dl-plus",
                 "invoke": {
                     "type": "panel",
