@@ -41,7 +41,7 @@
         "modules": [
             {
                 "name": "insights",
-                "entryPoint": "app.py",
+                "entryPoint": "main.py",
                 "className": "Runner",
                 "initInputs": [],
                 "config": {
