@@ -62,7 +62,7 @@
                 "displayName": "insights-runner",
                 "moduleName": "insights",
                 "panelNames": ["insights"],
-                "botUserName": "pipelines@dataloop.ai",
+                "botUserName": "tab-apps@dataloop.ai",
                 "initParams": {},
                 "runtime": {
                     "podType": "regular-s",
