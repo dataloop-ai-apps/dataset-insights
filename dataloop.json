@@ -1,5 +1,5 @@
 {
-    "version": "0.1.10",
+    "version": "0.1.11",
     "name": "dataset-insights",
     "displayName": "Dataset Insights",
     "description": "Provides insights on the dataset",
@@ -11,7 +11,7 @@
     "codebase": {
         "type": "git",
         "gitUrl": "https://github.com/dataloop-ai-apps/dataset-insights.git",
-        "gitTag": "0.1.10"
+        "gitTag": "0.1.11"
     },
     "scope": "public",
     "components": {
