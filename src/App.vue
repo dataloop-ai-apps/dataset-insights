@@ -215,21 +215,45 @@ const changePlotlyTheme = async (theme: ThemeType) => {
             font: {
                 color: '#000000'
             },
+            xaxis: {
+                linecolor: '#e4e4e4',
+                gridcolor: '#e4e4e4' // Change color of x-axis grid lines
+            },
+            yaxis: {
+                linecolor: '#e4e4e4',
+                gridcolor: '#e4e4e4' // Change color of y-axis grid lines
+            },
             margin: {
                 autoexpand: false
             },
-            autosize: false
+            legend: {
+                bgcolor: '#ffffff',
+                bordercolor: '#ffffff'
+            },
+            autosize: true
         },
         dark: {
-            plot_bgcolor: '#333333',
-            paper_bgcolor: '#333333',
+            plot_bgcolor: '#30363d',
+            paper_bgcolor: '#30363d',
             font: {
                 color: '#ffffff'
             },
+            xaxis: {
+                linecolor: '#ffffff',
+                gridcolor: '#ffffff26' // Change color of x-axis grid lines
+            },
+            yaxis: {
+                linecolor: '#ffffff',
+                gridcolor: '#ffffff26' // Change color of y-axis grid lines
+            },
             margin: {
                 autoexpand: false
             },
-            autosize: false
+            legend: {
+                bgcolor: '#30363d',
+                bordercolor: '#30363d'
+            },
+            autosize: true
         }
     }
 

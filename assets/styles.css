@@ -215,9 +215,19 @@ body,
     border: 1px solid var(--dl-color-separator) !important;
     border-radius: 16px;
     padding: 16px;
-    margin: 8px;
+    margin-top: 20px;
+    margin-left: 10px;
+    margin-right: 10px;
 }
 .card-container {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
+}
+
+.legendpie {
+    stroke: var(--dl-color-bg) !important;
+}
+
+.surface {
+    stroke: var(--dl-color-bg) !important;
 }
