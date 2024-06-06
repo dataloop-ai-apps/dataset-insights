@@ -1,19 +1,14 @@
 {
-    "version": "0.1.8",
-    "name": "dataset-insights",
-    "displayName": "Dataset Insights",
+    "version": "0.1.15",
+    "name": "dataset-insightss",
+    "displayName": "Dataset Insightss",
     "description": "Provides insights on the dataset",
     "attributes": {
         "Provider": "Dataloop",
         "Category": "Application",
         "Application Type": "Studio"
     },
-    "codebase": {
-        "type": "git",
-        "gitUrl": "https://github.com/dataloop-ai-apps/dataset-insights.git",
-        "gitTag": "0.1.8"
-    },
-    "scope": "public",
+    "scope": "project",
     "components": {
         "panels": [
             {
@@ -29,7 +24,7 @@
         ],
         "toolbars": [
             {
-                "displayName": "Insights",
+                "displayName": "Insightss",
                 "icon": "icon-dl-plus",
                 "invoke": {
                     "type": "panel",
@@ -58,8 +53,8 @@
         ],
         "services": [
             {
-                "name": "insights-runner",
-                "displayName": "insights-runner",
+                "name": "insights-runnerr",
+                "displayName": "insights-runnerr",
                 "moduleName": "insights",
                 "panelNames": [
                     "insights"
