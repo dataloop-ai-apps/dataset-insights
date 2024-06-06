@@ -8,8 +8,9 @@ RUN pip install --user  \
     plotly \
     dash \
     dash-bootstrap-components \
-    dash_bootstrap_templates
-
+    dash_bootstrap_templates \
+    pyarrow \
+    fastparquet
 
 
 

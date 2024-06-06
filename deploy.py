@@ -1,12 +1,9 @@
-import subprocess
 import json
-import time
-
 import dtlpy as dl
 
 
 def clean():
-    dpk = dl.dpks.get(dpk_name='dataset-insights')
+    dpk = dl.dpks.get(dpk_name='dataset-insightss')
     filters = dl.Filters(field='dpkName', values=dpk.name, resource='apps')
 
     for app in dl.apps.list(filters=filters).all():
@@ -27,19 +24,25 @@ def publish_and_install(project, manifest):
     print(f'published successfully! dpk name: {dpk.name}, version: {dpk.version}, dpk id: {dpk.id}')
     filters = dl.Filters(field='dpkName', values=dpk.name, resource='apps')
 
-    for app in dl.apps.list(filters=filters).all():
-        print(app.name, app.project.name, app.scope)
-        if app.dpk_version != dpk.version:
-            app.dpk_version = dpk.version
-            app.update()
-            print(f'update done. app id: {app.id}')
+    try:
+        app = project.apps.get(app_name=dpk.display_name)
+        print(f'already installed, updating...')
+        app.dpk_version = dpk.version
+        app.update()
+        print(f'update done. app id: {app.id}')
+    except dl.exceptions.NotFound:
+        print(f'installing ..')
+        app = project.apps.install(dpk=dpk,
+                                   app_name=dpk.display_name,
+                                   scope='project')
+        print(f'installed! app id: {app.id}')
     print(f'Done!')
 
 
 if __name__ == "__main__":
-    dl.setenv('rc')
-    project = dl.projects.get(project_name="COCO ors")
-    # project = dl.projects.get(project_id="2bb16c5f-081f-4afb-91e0-78699c1b3476")
+    dl.setenv('prod')
+    # project = dl.projects.get(project_name="DataloopTasks")
+    project = dl.projects.get(project_id="f056db8b-01f7-4990-8ef0-c589d63a3673")
     # bump()
     with open('dataloop.json') as f:
         manifest = json.load(f)

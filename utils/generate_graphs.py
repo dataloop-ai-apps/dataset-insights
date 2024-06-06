@@ -160,7 +160,7 @@ class GraphsCalculator:
 
         return fig
 
-    def heatmap_annotation_location(self, df, settings):
+    def heatmap_annotation_location(self, df, settings, max_item_width, max_item_height):
         if self._fig_heatmap_annotation_location is None:
             def add_single(wtop, wleft, wright, wbottom):
                 try:
@@ -171,7 +171,7 @@ class GraphsCalculator:
                     pbar.update()
 
             t = time.time()
-            density_matrix = np.zeros((int(df.height.max()), int(df.width.max())))
+            density_matrix = np.zeros((int(max_item_height), int(max_item_width)))
             # Populate the matrix based on bounding box locations
             pbar = tqdm.tqdm(total=df.shape[0])
             # pool = ThreadPoolExecutor(max_workers=32)
@@ -213,7 +213,7 @@ class GraphsCalculator:
         return fig
         #
 
-    def scatter_annotation_height_width(self, df, settings):
+    def scatter_annotation_height_width(self, df, max_item_height, max_item_width, settings):
         if self._fig_scatter_annotation_height_width is None:
             a = df.groupby(['annotation_width', 'annotation_height']).size().reset_index(name='Counts')
             a['hover_text'] = [f'Count: {count}' for count in a['Counts']]
@@ -225,9 +225,9 @@ class GraphsCalculator:
                              hover_name='hover_text',  # Set hover text
                              )
             fig.update_traces(marker=dict(sizemode='area', sizeref=2. * max(a['Counts']) / (40. ** 2), sizemin=1))
-            fig.update_xaxes(range=[0, df['height'].max()],
+            fig.update_xaxes(range=[0, max_item_height],
                              title='Height')  # Set min x to 0 and max x to 40
-            fig.update_yaxes(range=[0, df['width'].max()],
+            fig.update_yaxes(range=[0, max_item_width],
                              title='Width')  # Set min x to 0 and max x to 40
             self._fig_scatter_annotation_height_width = fig
         else:

@@ -1,22 +1,19 @@
-from fastapi.middleware.cors import CORSMiddleware
-import json
-from concurrent.futures import ThreadPoolExecutor
-import requests
-import pydantic
+import threading
 import logging
 import uvicorn
-import tqdm
+import json
 
 from dash import Dash, dcc, html, callback, Input, Output
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
 
-import dtlpy as dl
-
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.wsgi import WSGIMiddleware
-from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, BackgroundTasks
+
+import dtlpy as dl
 
 from urllib.parse import urlparse
 
@@ -30,41 +27,6 @@ load_figure_template(["cyborg", "darkly", "minty", "cerulean"])
 
 port = 3000
 
-
-class Runner(dl.BaseServiceRunner):
-    def __init__(self):
-        uvicorn.run("app:app",
-                    host="0.0.0.0",
-                    port=port,
-                    timeout_keep_alive=60
-                    )
-
-
-class InsightsHandles:
-    def __init__(self):
-        self.insights = dict()
-
-    def get(self, dataset_id):
-        if dataset_id not in self.insights:
-            self.insights[dataset_id] = Insights(
-                dataset_id=dataset_id)
-        return self.insights[dataset_id]
-
-
-class ExporterHandles:
-    def __init__(self):
-        self.exporters = dict()
-
-    def get(self, dataset_id):
-        if dataset_id not in self.exporters:
-            self.exporters[dataset_id] = Exporter(dataset_id=dataset_id)
-        return self.exporters[dataset_id]
-
-
-insights_handler = InsightsHandles()
-exporters_handler = ExporterHandles()
-
-# Initialize FastAPI app
 app = FastAPI()
 
 origins = [
@@ -84,6 +46,7 @@ app_dash = Dash(__name__,
                 suppress_callback_exceptions=True,
                 routes_pathname_prefix="/",
                 requests_pathname_prefix="/dash/")
+
 
 app_dash.layout = html.Div([
     dcc.Location(id='url', refresh=False),
@@ -116,8 +79,47 @@ def display_page(pathname, search):
         return html.Div('No page found')
 
 
-class Settings(pydantic.BaseModel):
-    theme: str
+class Runner(dl.BaseServiceRunner):
+    def __init__(self):
+        self.thread = threading.Thread(target=uvicorn.run,
+                                       kwargs={'app': app,
+                                               'host': "0.0.0.0",
+                                               'port': port,
+                                               'timeout_keep_alive': 60}
+                                       )
+        self.thread.daemon = True
+        self.thread.start()
+
+
+class InsightsHandles:
+    def __init__(self):
+        self.insights = dict()
+
+    def get(self, dataset_id):
+        if dataset_id not in self.insights:
+            self.insights[dataset_id] = Insights(
+                dataset_id=dataset_id)
+        return self.insights[dataset_id]
+
+
+class ExporterHandles:
+    def __init__(self):
+        self.exporters = dict()
+
+    def get(self, dataset_id):
+        if dataset_id not in self.exporters:
+            self.exporters[dataset_id] = Exporter(dataset_id=dataset_id)
+        return self.exporters[dataset_id]
+
+
+insights_handler = InsightsHandles()
+exporters_handler = ExporterHandles()
+
+
+def build_in_background(dataset_id, item_id):
+    logger.info('inside background. stating...')
+    insights: Insights = insights_handler.get(dataset_id=dataset_id)
+    insights.run(export_item_id=item_id)
 
 
 @app.get("/export/status")
@@ -173,14 +175,15 @@ def build_status(datasetId):
     """
     insights: Insights = insights_handler.get(dataset_id=datasetId)
     status = {
-        'status': insights.build_status
+        'status': insights.build_status,
+        'progress': insights.build_progress
     }
     logger.info(f"Returning status: {status}")
     return HTMLResponse(json.dumps(status, indent=2), status_code=200)
 
 
 @app.get("/graph/build")
-def update_dataset(datasetId, itemId):
+async def update_dataset(datasetId, itemId, background_tasks: BackgroundTasks):
     """
     Build the graphs for a specific dataset from exported item.
 
@@ -191,11 +194,11 @@ def update_dataset(datasetId, itemId):
     Returns:
     - JSON response indicating that the build is ready.
     """
-    insights: Insights = insights_handler.get(dataset_id=datasetId)
-    insights.build_status = "building"
-    insights.run(export_item_id=itemId)
-    insights.build_status = "ready"
-    return HTMLResponse(json.dumps({'status': 'ready'}), status_code=200)
+    logger.info('starting insights build (insights.run) in background. get status from /insights/status page')
+    background_tasks.add_task(build_in_background,
+                              dataset_id=datasetId,
+                              item_id=itemId)
+    return HTMLResponse(json.dumps({'status': 'started'}), status_code=200)
 
 
 # Mount the Dash app at the "/dash" endpoint
