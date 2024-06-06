@@ -9,10 +9,10 @@ export default defineConfig({
     build: {
         outDir: 'dist'
     },
-    base: '',
+    base: '/insights',
     server: {
-        host: 'local.dataloop.ai',
-        https: true,
+        host: '0.0.0.0',
+        https: false,
         port: 8084
     },
     optimizeDeps: {

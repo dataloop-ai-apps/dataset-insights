@@ -1,7 +1,7 @@
-import traceback
 from concurrent.futures import ThreadPoolExecutor
 import dtlpy as dl
 import pandas as pd
+import traceback
 import logging
 import pathlib
 import json

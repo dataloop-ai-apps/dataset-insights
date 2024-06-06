@@ -39,7 +39,7 @@
             <div v-if="!buildReady" class="loading-spinner">
                 <DlSpinner text="Loading App..." size="128px" />
             </div>
-            <div class="container">
+            <div class="container" :class="{ invisible: !buildReady }">
                 <iframe
                     id="iframe1"
                     ref="contentIframe"
@@ -100,14 +100,12 @@ const loadFrame = async () => {
 
         buttonLabel.value = 'Loading'
         fetch(
-            `/insights/build?datasetId=${datasetId.value}&itemId=${exportItemId.value}`
+            `/graph/build?datasetId=${datasetId.value}&itemId=${exportItemId.value}`
         )
         buildReady.value = false
         await pollBuildStatus()
-        contentIframe.value.src = `/dash`
-        buildReady.value = true
+        contentIframe.value.src = `/dash/datasets?id=${datasetId.value}`
     } catch (e) {
-        console.error('Failed loading frame', e)
         buttonLabel.value = 'Run'
         operationRunning.value = false
         frameLoadFailed.value = true
@@ -172,7 +170,7 @@ const handleInitialFrameLoading = async () => {
     } catch (e) {
         console.error('Error fetching insights', e)
     }
-    buildReady.value = true
+
     buttonLabel.value = 'Run'
     operationRunning.value = false
 }
@@ -192,10 +190,14 @@ const checkPlotlyReady = async () => {
         const interval = setInterval(() => {
             const iframeDocument =
                 document.getElementById('iframe1').contentWindow.document
-            const mainContainer =
-                iframeDocument.getElementById('main-container')
-            console.log('checking plotly ready', mainContainer)
+            const iframeGraph = iframeDocument.getElementById('graph-4-2')
+            const iframeGraphChildren = iframeGraph?.children
+            const mainContainer = iframeGraphChildren?.length
+                ? iframeGraphChildren[1]
+                : null
+
             if (mainContainer) {
+                buildReady.value = true
                 clearInterval(interval)
                 resolve(true)
             }
@@ -208,18 +210,50 @@ const changePlotlyTheme = async (theme: ThemeType) => {
 
     const themes = {
         light: {
-            plot_bgcolor: 'var(--dl-color-chart-1)', //'#ffffff',
+            plot_bgcolor: '#ffffff',
             paper_bgcolor: '#ffffff',
             font: {
                 color: '#000000'
-            }
+            },
+            xaxis: {
+                linecolor: '#e4e4e4',
+                gridcolor: '#e4e4e4' // Change color of x-axis grid lines
+            },
+            yaxis: {
+                linecolor: '#e4e4e4',
+                gridcolor: '#e4e4e4' // Change color of y-axis grid lines
+            },
+            margin: {
+                autoexpand: false
+            },
+            legend: {
+                bgcolor: '#ffffff',
+                bordercolor: '#ffffff'
+            },
+            autosize: true
         },
         dark: {
-            plot_bgcolor: '#333333',
-            paper_bgcolor: '#333333',
+            plot_bgcolor: '#30363d',
+            paper_bgcolor: '#30363d',
             font: {
                 color: '#ffffff'
-            }
+            },
+            xaxis: {
+                linecolor: '#ffffff',
+                gridcolor: '#ffffff26' // Change color of x-axis grid lines
+            },
+            yaxis: {
+                linecolor: '#ffffff',
+                gridcolor: '#ffffff26' // Change color of y-axis grid lines
+            },
+            margin: {
+                autoexpand: false
+            },
+            legend: {
+                bgcolor: '#30363d',
+                bordercolor: '#30363d'
+            },
+            autosize: true
         }
     }
 
@@ -231,30 +265,23 @@ const changePlotlyTheme = async (theme: ThemeType) => {
     }
 
     const mainContainer = iframeDocument.getElementById('main-container')
-    console.log('changingggg before', mainContainer)
     mainContainer.setAttribute(
         'data-theme',
         theme == 'dark' ? 'dark-mode' : 'light-mode'
     )
-    console.log('changingggg after', mainContainer)
     const cols = 2
     const rows = 4
     for (let c = 0; c < cols; c++) {
         for (let r = 0; r < rows; r++) {
             const gid = `graph-${r + 1}-${c + 1}`
-            console.log(gid)
             const graphDiv = iframeDocument.getElementById(gid)
-            // graphDiv.style.margin = '16px'
-            console.log(graphDiv)
+
             window.Plotly.relayout(graphDiv.children[1], newLayout)
-                .then(function () {
-                    console.log('Layout updated')
-                })
-                .catch(function (error) {
-                    console.error('Error updating layout:', error)
-                })
         }
     }
+    nextTick(() => {
+        buildReady.value = true
+    })
 }
 onMounted(() => {
     window.dl.on(DlEvent.READY, async () => {
@@ -368,5 +395,9 @@ async function onClick() {
     justify-content: space-between;
     padding: 10px 0;
     border-bottom: 1px solid var(--dl-color-disabled);
+}
+
+.invisible {
+    opacity: 0;
 }
 </style>
