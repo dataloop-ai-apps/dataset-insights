@@ -1,5 +1,5 @@
 {
-    "version": "0.1.8",
+    "version": "0.1.13",
     "name": "dataset-insights",
     "displayName": "Dataset Insights",
     "description": "Provides insights on the dataset",
@@ -11,7 +11,7 @@
     "codebase": {
         "type": "git",
         "gitUrl": "https://github.com/dataloop-ai-apps/dataset-insights.git",
-        "gitTag": "0.1.8"
+        "gitTag": "0.1.13"
     },
     "scope": "public",
     "components": {
@@ -41,7 +41,7 @@
         "modules": [
             {
                 "name": "insights",
-                "entryPoint": "app.py",
+                "entryPoint": "main.py",
                 "className": "Runner",
                 "initInputs": [],
                 "config": {
@@ -61,9 +61,8 @@
                 "name": "insights-runner",
                 "displayName": "insights-runner",
                 "moduleName": "insights",
-                "panelNames": [
-                    "insights"
-                ],
+                "panelNames": ["insights"],
+                "botUserName": "tab-apps@dataloop.ai",
                 "initParams": {},
                 "runtime": {
                     "podType": "regular-s",
