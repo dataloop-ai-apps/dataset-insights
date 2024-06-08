@@ -97,16 +97,18 @@ class Insights:
                         items_dict=items_dict,
                         annotations_dict=annotations_dict)
         pool.shutdown()
-        print(f'files collection time: {(time.time() - t):.2f}[s]')
+
+        logger.info(f'files collection time: {(time.time() - t):.2f}[s]')
         t = time.time()
         self.items_df = pd.DataFrame(items_dict.values())
         self.annotations_df = pd.DataFrame(annotations_dict.values())
-
-        print(f'DataFrame load time: {(time.time() - t):.2f}[s]')
-        print(f'num dataset items: {self.dataset.items_count}')
-        print(f'num dataframe items: {self.items_df.shape[0]}')
-        print(f'num dataset annotations: {self.dataset.annotations_count}')
-        print(f'num dataframe annotations: {self.annotations_df.shape[0]}')
+        for filepath in json_files:
+            os.remove(filepath)
+        logger.info(f'DataFrame load time: {(time.time() - t):.2f}[s]')
+        logger.info(f'num dataset items: {self.dataset.items_count}')
+        logger.info(f'num dataframe items: {self.items_df.shape[0]}')
+        logger.info(f'num dataset annotations: {self.dataset.annotations_count}')
+        logger.info(f'num dataframe annotations: {self.annotations_df.shape[0]}')
 
     def create_html(self):
         divs = [
@@ -167,7 +169,7 @@ class Insights:
                                                           )))
                           ])
         ]
-        # ))
+
         return divs
 
     def get_parquet_files(self):
@@ -185,8 +187,8 @@ class Insights:
         second_pages = json_item.dataset.items.list(filters=filters)
         if first_pages.items_count != 0 and second_pages.items_count != 0:
             logger.info('found parquet files! downloading existing dataframes')
-            self.items_df = pd.read_parquet(first_pages.items[0].download())
-            self.annotations_df = pd.read_parquet(second_pages.items[0].download())
+            self.items_df = pd.read_parquet(first_pages.items[0].download(save_locally=False))
+            self.annotations_df = pd.read_parquet(second_pages.items[0].download(save_locally=False))
             return True
         else:
             return False
@@ -205,7 +207,13 @@ class Insights:
                                        remote_path=os.path.dirname(remote_path),
                                        remote_name=os.path.basename(remote_path))
 
+        # remove local files
+        os.remove(f'{json_item.id}-items.parquet')
+        os.remove(f'{json_item.id}-annotations.parquet')
+
     def run(self, export_item_id):
+        if self.build_status not in ("failed", "ready"):
+            return
         self.build_status = "started"
         self.build_progress = 0
         try:
@@ -219,10 +227,13 @@ class Insights:
                     self.build_dataframe()
                     self.set_parquet_files()
                 self.gc.clear()
-            self.build_status = "creating"
-            self.divs = self.create_html()
+                self.build_status = "creating"
+                self.divs = self.create_html()
+
             self.build_status = "ready"
-            self.build_progress = 100
+            self.build_progress = 1
+            self.items_df = None
+            self.annotations_df = None
         except Exception as e:
             self.build_status = "failed"
             self.build_progress = traceback.format_exc()

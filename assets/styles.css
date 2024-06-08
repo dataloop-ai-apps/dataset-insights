@@ -222,12 +222,72 @@ body,
 .card-container {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
+
+    .legendpie {
+        stroke: var(--dl-color-bg) !important;
+    }
+
+    .legendtext {
+        fill: var(--dl-color-darker) !important;
+    }
+
+    .slicetext {
+        fill: var(--dl-color-darker) !important;
+    }
+
+    .textline{
+        stroke: var(--dl-color-darker) !important;
+    }
+    
+    .surface {
+        stroke: var(--dl-color-bg) !important;
+    }
+    
+    .main-svg {
+        background: transparent !important;
+        font: var(--dl-color-black) !important;
+    }
+    
+    .bg {
+        fill: var(--dl-color-bg) !important;
+    }
+    .gtitle{
+        fill: var(--dl-color-darker) !important;
+    }
+
+    .ygrid {
+        stroke: var(--dl-color-separator) !important;
+    }
+
+    .xgrid {
+        stroke: var(--dl-color-separator) !important;
+    }
+
+    .xtick text{
+        fill: var(--dl-color-darker) !important;
+    }
+
+    .ytick text{
+        fill: var(--dl-color-darker) !important;
+    }
+    .cbtitle text{
+        fill: var(--dl-color-darker) !important;
+    }
+    .ycbcoloraxistick text{
+        fill: var(--dl-color-darker) !important;
+    }
+    .zl{
+        stroke: var(--dl-color-separator) !important;
+    }
+
+  
+
+    
+    .ytitle {
+        fill: var(--dl-color-darker) !important;
+    }
+    .xtitle {
+        fill: var(--dl-color-darker) !important;
+    }
 }
 
-.legendpie {
-    stroke: var(--dl-color-bg) !important;
-}
-
-.surface {
-    stroke: var(--dl-color-bg) !important;
-}

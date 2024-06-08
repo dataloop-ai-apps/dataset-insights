@@ -36,8 +36,17 @@
                     />
                 </div>
             </div>
-            <div v-if="!buildReady" class="loading-spinner">
-                <DlSpinner text="Loading App..." size="128px" />
+
+            <div v-if="!buildReady" class="progress-bar-container">
+                <DlProgressBar
+                    label="Building insights..."
+                    :value="buildPerc"
+                    v-bind="{
+                        showValue: true,
+                        showPercentage: true
+                    }"
+                    :indeterminate="!downloadReady"
+                />
             </div>
             <div class="container" :class="{ invisible: !buildReady }">
                 <iframe
@@ -63,10 +72,12 @@ import {
 import { DlEvent, ThemeType } from '@dataloop-ai/jssdk'
 import { ref, onMounted, computed, nextTick } from 'vue-demi'
 import { debounce } from 'lodash'
+import { title } from 'process'
 
 const contentIframe = ref<HTMLIFrameElement | null>(null)
 const isReady = ref<boolean>(false)
-const buildReady = ref<boolean>(true)
+const buildReady = ref<boolean>(false)
+const downloadReady = ref<boolean>(false)
 const currentTheme = ref<ThemeType>(ThemeType.LIGHT)
 const lastUpdated = ref<string>('Never')
 const operationRunning = ref<boolean>(true)
@@ -76,6 +87,7 @@ const datasetId = ref<string>(null)
 const projectId = ref<string>(null)
 const exportItemId = ref<string>(null)
 const frameLoadFailed = ref<boolean>(false)
+const buildPerc = ref<number>(0)
 
 const isDark = computed<boolean>(() => {
     return currentTheme.value === ThemeType.DARK
@@ -146,9 +158,12 @@ const getBuildStatus = async () => {
     if (Object.keys(data).length === 0) {
         return false
     }
-
+    buildPerc.value = data.progress
     if (frameLoadFailed.value) {
         frameLoadFailed.value = false
+    }
+    if (data.status !== 'downloading' && data.status !== 'started') {
+        downloadReady.value = true
     }
 
     const completed = data.status === 'ready'
@@ -208,77 +223,11 @@ const changePlotlyTheme = async (theme: ThemeType) => {
     const iframeDocument =
         document.getElementById('iframe1').contentWindow.document
 
-    const themes = {
-        light: {
-            plot_bgcolor: '#ffffff',
-            paper_bgcolor: '#ffffff',
-            font: {
-                color: '#000000'
-            },
-            xaxis: {
-                linecolor: '#e4e4e4',
-                gridcolor: '#e4e4e4' // Change color of x-axis grid lines
-            },
-            yaxis: {
-                linecolor: '#e4e4e4',
-                gridcolor: '#e4e4e4' // Change color of y-axis grid lines
-            },
-            margin: {
-                autoexpand: false
-            },
-            legend: {
-                bgcolor: '#ffffff',
-                bordercolor: '#ffffff'
-            },
-            autosize: true
-        },
-        dark: {
-            plot_bgcolor: '#30363d',
-            paper_bgcolor: '#30363d',
-            font: {
-                color: '#ffffff'
-            },
-            xaxis: {
-                linecolor: '#ffffff',
-                gridcolor: '#ffffff26' // Change color of x-axis grid lines
-            },
-            yaxis: {
-                linecolor: '#ffffff',
-                gridcolor: '#ffffff26' // Change color of y-axis grid lines
-            },
-            margin: {
-                autoexpand: false
-            },
-            legend: {
-                bgcolor: '#30363d',
-                bordercolor: '#30363d'
-            },
-            autosize: true
-        }
-    }
-
-    let newLayout
-    if (theme === 'light') {
-        newLayout = themes.light
-    } else {
-        newLayout = themes.dark
-    }
-
     const mainContainer = iframeDocument.getElementById('main-container')
     mainContainer.setAttribute(
         'data-theme',
         theme == 'dark' ? 'dark-mode' : 'light-mode'
     )
-    const cols = 2
-    const rows = 4
-    for (let c = 0; c < cols; c++) {
-        for (let r = 0; r < rows; r++) {
-            const gid = `graph-${r + 1}-${c + 1}`
-            const graphDiv = iframeDocument.getElementById(gid)
-
-            window.Plotly.relayout(graphDiv.children[1], newLayout)
-        }
-    }
     nextTick(() => {
         buildReady.value = true
     })
@@ -359,6 +308,8 @@ async function onClick() {
     buttonLabel.value = 'Running'
     lastUpdated.value = new Date().toString().split(' ').slice(1, 5).join(' ')
     progressValue.value = 0
+    buildPerc.value = 0
+    downloadReady.value = false
     frameLoadFailed.value = true
 
     debouncedRunDatasetInsightGeneration()
@@ -387,6 +338,13 @@ async function onClick() {
     display: grid;
     place-items: center;
     height: 100vh;
+}
+
+.progress-bar-container {
+    display: grid;
+    place-items: center;
+    height: 100vh;
+    margin: 0 15%;
 }
 
 .top-bar {
