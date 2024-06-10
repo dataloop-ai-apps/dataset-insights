@@ -136,19 +136,19 @@ class Insights:
                                                                                                    settings=self.settings)))
                           ]
                           ),
-            dbc.Container(className='card-container',
-                          children=[
-                              dbc.Card(children=dcc.Graph(id='graph-3-1',
-                                                          className="graph",
-                                                          figure=self.gc.pie_annotation_attributes(
-                                                              df=self.annotations_df,
-                                                              settings=self.settings))),
-                              dbc.Card(children=dcc.Graph(id='graph-3-2',
-                                                          className="graph",
-                                                          figure=self.gc.sunburst_annotation_attribute_by_label(
-                                                              df=self.annotations_df,
-                                                              settings=self.settings)))
-                          ], ),
+            # dbc.Container(className='card-container',
+            #               children=[
+            #                   dbc.Card(children=dcc.Graph(id='graph-3-1',
+            #                                               className="graph",
+            #                                               figure=self.gc.pie_annotation_attributes(
+            #                                                   df=self.annotations_df,
+            #                                                   settings=self.settings))),
+            #                   dbc.Card(children=dcc.Graph(id='graph-3-2',
+            #                                               className="graph",
+            #                                               figure=self.gc.sunburst_annotation_attribute_by_label(
+            #                                                   df=self.annotations_df,
+            #                                                   settings=self.settings)))
+            #               ], ),
             dbc.Container(className='card-container',
                           children=[
                               dbc.Card(children=dcc.Graph(id='graph-4-1',
