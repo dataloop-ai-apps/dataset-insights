@@ -65,7 +65,7 @@
                 "botUserName": "tab-apps@dataloop.ai",
                 "initParams": {},
                 "runtime": {
-                    "podType": "regular-s",
+                    "podType": "highmem-l",
                     "numReplicas": 1,
                     "concurrency": 10,
                     "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/dataset-insights:0.2.7",
