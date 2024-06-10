@@ -39,13 +39,16 @@
 
             <div v-if="!buildReady" class="progress-bar-container">
                 <DlProgressBar
-                    label="Building insights..."
+                    :label="ProgressMessage"
                     :value="buildPerc"
                     v-bind="{
                         showValue: true,
                         showPercentage: true
                     }"
-                    :indeterminate="!downloadReady"
+                    :indeterminate="
+                        !downloadReady ||
+                            ProgressMessage !== 'Building Insights...'
+                    "
                 />
             </div>
             <div class="container" :class="{ invisible: !buildReady }">
@@ -88,6 +91,7 @@ const projectId = ref<string>(null)
 const exportItemId = ref<string>(null)
 const frameLoadFailed = ref<boolean>(false)
 const buildPerc = ref<number>(0)
+const ProgressMessage = ref<string>('Building Insights...')
 
 const isDark = computed<boolean>(() => {
     return currentTheme.value === ThemeType.DARK
@@ -164,6 +168,9 @@ const getBuildStatus = async () => {
     }
     if (data.status !== 'downloading' && data.status !== 'started') {
         downloadReady.value = true
+    }
+    if (data.status === 'ready') {
+        ProgressMessage.value = 'Creating Graphs...'
     }
 
     const completed = data.status === 'ready'
@@ -311,6 +318,7 @@ async function onClick() {
     buildPerc.value = 0
     downloadReady.value = false
     frameLoadFailed.value = true
+    ProgressMessage.value = 'Building Insights...'
 
     debouncedRunDatasetInsightGeneration()
 }

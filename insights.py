@@ -81,7 +81,7 @@ class Insights:
             logger.exception(f'failed in item: {item_id}')
         finally:
             pbar.update()
-            self.build_progress = pbar.n / pbar.total
+            self.build_progress = min(pbar.n / pbar.total, 0.99)
 
     def build_dataframe(self):
         json_files = list(pathlib.Path(self.path).rglob('*.json'))
@@ -228,6 +228,7 @@ class Insights:
                     self.set_parquet_files()
                 self.gc.clear()
                 self.build_status = "creating"
+                self.build_progress = 0.995
                 self.divs = self.create_html()
 
             self.build_status = "ready"
