@@ -1,9 +1,0 @@
-plotly
-dash
-dash-bootstrap-components
-dash_bootstrap_templates
-uvicorn
-fastapi
-dtlpy
-pyarrow
-fastparquet
