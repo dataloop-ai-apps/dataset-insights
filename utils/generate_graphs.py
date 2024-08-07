@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import time
 import tqdm
@@ -160,30 +161,31 @@ class GraphsCalculator:
 
         return fig
 
-    def heatmap_annotation_location(self, df, settings, max_item_width, max_item_height):
+    def heatmap_annotation_location(self, annotations_df, items_df, settings):
         if self._fig_heatmap_annotation_location is None:
-            def add_single(wtop, wleft, wright, wbottom):
-                try:
-                    density_matrix[int(wtop):int(wbottom), int(wleft):int(wright)] += 1
-                except Exception as e:
-                    print(e)
-                finally:
-                    pbar.update()
-
             t = time.time()
-            density_matrix = np.zeros((int(max_item_height), int(max_item_width)))
-            # Populate the matrix based on bounding box locations
-            pbar = tqdm.tqdm(total=df.shape[0])
-            # pool = ThreadPoolExecutor(max_workers=32)
-            for top, left, bottom, right in zip(df.top, df.left, df.bottom, df.right):
-                density_matrix[int(top):int(bottom), int(left):int(right)] += 1
-                # pool.submit(fn=add_single, wtop=top, wbottom=bottom, wleft=left, wright=right)
+            density_matrix = np.zeros((640, 640))
+            size_by_item = dict()
+            for _, row in items_df.iterrows():
+                size_by_item[row.item_id] = [row.height, row.width]
+            for _, row in annotations_df.iterrows():
+                left, top, right, bottom = row.left, row.top, row.right, row.bottom
+                img_h, img_w = size_by_item[row.item_id]
+                s_l = int(640 * left / img_w)
+                s_t = int(640 * top / img_h)
+                s_r = int(640 * right / img_w)
+                s_b = int(640 * bottom / img_h)
+                density_matrix[int(s_t):int(s_b), int(s_l):int(s_r)] += 1
             print(f'density matrix creation time: {(time.time() - t):.2f}[s]')
             # pool.shutdown()
             fig = px.imshow(img=density_matrix,
                             title="Annotation Location Heatmap",
                             color_continuous_scale='Viridis',  # Colorscale
-                            labels=dict(color="density"))
+                            labels=dict(x="Normalized Width", y="Normalized Height", color="density"),
+                            )
+            # Update x and y axes to hide tick labels
+            fig.update_xaxes(title_text="Custom X Axis", showticklabels=False)
+            fig.update_yaxes(title_text="Custom Y Axis", showticklabels=False)
             self._fig_heatmap_annotation_location = fig
         else:
             fig = self._fig_heatmap_annotation_location
@@ -235,12 +237,3 @@ class GraphsCalculator:
         fig.update_layout(template=settings['theme'])
 
         return fig
-
-#
-# if __name__ == "__main__":
-#     dl.setenv('rc')
-#     from main import Runner, Insights
-#
-#     dataset = dl.datasets.get(None, '5f4d13ba4a958a49a7747cd9')
-#     insights = Insights()
-#     df = insights.export_and_build_dataframe(dataset_id=dataset.id)

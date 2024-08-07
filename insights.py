@@ -154,10 +154,9 @@ class Insights:
                               dbc.Card(children=dcc.Graph(id='graph-4-1',
                                                           className="graph",
                                                           figure=self.gc.heatmap_annotation_location(
-                                                              df=self.annotations_df,
+                                                              annotations_df=self.annotations_df,
+                                                              items_df=self.items_df,
                                                               settings=self.settings,
-                                                              max_item_width=self.items_df['height'].max(),
-                                                              max_item_height=self.items_df['height'].max(),
                                                           ))),
                               dbc.Card(children=dcc.Graph(id='graph-4-2',
                                                           className="graph",
