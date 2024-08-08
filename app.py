@@ -117,7 +117,7 @@ exporters_handler = ExporterHandles()
 
 
 def build_in_background(dataset_id, item_id):
-    logger.info('inside background. stating...')
+    logger.info(f'inside background. stating with item_id: {item_id} for dataset_id: {dataset_id}')
     insights: Insights = insights_handler.get(dataset_id=dataset_id)
     insights.run(export_item_id=item_id)
 

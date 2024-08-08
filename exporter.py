@@ -105,44 +105,47 @@ class Exporter:
         return annotation_zip_item
 
     def start_export(self):
-        export_version = dl.ExportVersion.V1
-        payload = dict()
-        payload['annotations'] = {
-            "include": True,
-            "convertSemantic": False
+        self.status = "running"
+        self.progress = 0
+        self.export_date = ""
+        self.export_item_id = ""
+        payload = {
+            # 'itemsQuery': {"filter": params.get("query", {}), "join": params.get("join", {})},
+            'includeItemVectors': True,
+            "itemsVectorQuery": {'select': {"datasetId": 1, 'featureSetId': 1, 'value': 1}},
+            'exportType': 'json'
         }
-        payload['exportVersion'] = export_version
-
         success, response = dl.client_api.gen_request(req_type='post',
                                                       path='/datasets/{}/export'.format(self.dataset.id),
                                                       json_req=payload,
-                                                      headers={'user_query': 'true'})
+                                                      )
         if not success:
             raise dl.exceptions.PlatformException(response)
 
         # save command in json
-        command = dl.Command.from_json(_json=response.json(),
-                                       client_api=dl.client_api)
-        self.update_active_exports(command_id=command.id)
+        json_string = response.content.decode('utf-8')
+        id_load = json.loads(json_string)['id']
 
-        thread = threading.Thread(target=self.wait_for_command, kwargs={"command_id": command.id})
+        self.update_active_exports(command_id=id_load)
+
+        thread = threading.Thread(target=self.wait_for_command, kwargs={"command_id": id_load})
         thread.daemon = True
         thread.start()
-        return command.id
+        return id_load
 
     def update_active_exports(self, command_id):
         b_dataset = self.dataset.project.datasets._get_binaries_dataset()
         buffer = io.BytesIO()
         buffer.write(json.dumps({"commandId": command_id}).encode('utf-8'))
         buffer.name = "active_export.json"
-        logger.info(f"Uploading active_export.json to /.dataloop/exports{self.dataset.id}")
+        logger.info(f"Uploading active_export.json to /.dataloop/exports/fv_json/{self.dataset.id}")
         b_dataset.items.upload(local_path=buffer,
-                               remote_path=f'/.dataloop/exports/{self.dataset.id}',
+                               remote_path=f'/.dataloop/exports/fv_json/{self.dataset.id}',
                                overwrite=True)
 
     def remove_active_exports(self):
         filters = dl.Filters(use_defaults=False)
-        filters.add(field='filename', values=f'/.dataloop/exports/{self.dataset.id}/active_export.json')
+        filters.add(field='filename', values=f'/.dataloop/exports/fv_json/{self.dataset.id}/active_export.json')
         filters.page_size = 10
         b_dataset = self.dataset.project.datasets._get_binaries_dataset()
         items = b_dataset.items.list(filters=filters)
@@ -152,7 +155,7 @@ class Exporter:
 
     def check_active_exports(self):
         filters = dl.Filters(use_defaults=False)
-        filters.add(field='dir', values=f'/.dataloop/exports/{self.dataset.id}/active_export.json')
+        filters.add(field='dir', values=f'/.dataloop/exports/fv_json/{self.dataset.id}/active_export.json')
         filters.page_size = 10
         b_dataset = self.dataset.project.datasets._get_binaries_dataset()
         items = b_dataset.items.list(filters=filters)
@@ -165,12 +168,18 @@ class Exporter:
 
     def find_last_export(self):
         filters = dl.Filters(use_defaults=False)
-        filters.add(field='dir', values=f'/.dataloop/exports/{self.dataset.id}')
+        filters.add(field='dir', values=f'/.dataloop/exports/fv_done_json/{self.dataset.id}')
         filters.sort_by(field='createdAt', value=dl.FiltersOrderByDirection.DESCENDING)
         filters.page_size = 10
         b_dataset = self.dataset.project.datasets._get_binaries_dataset()
         items = b_dataset.items.list(filters=filters)
         if items.items_count != 0:
-            return items.items[0]
-        else:
-            return None
+            stored_output_item = items.items[0]
+            item_dir = stored_output_item.download(save_locally=False)
+            new_output_item_id = json.loads(item_dir.getvalue())['OutputItemId']
+            item = b_dataset.items.get(item_id=new_output_item_id)
+            if item.filename.endswith('.json'):
+                print(f"Found last export with item id: {new_output_item_id}")
+                return item
+
+        return None
