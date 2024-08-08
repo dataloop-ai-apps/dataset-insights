@@ -189,8 +189,6 @@ class Insights:
         os.remove(f'{json_item.id}-annotations.parquet')
 
     def run(self, export_item_id):
-        if self.build_status not in ("failed", "ready"):
-            return
         self.build_status = "started"
         self.build_progress = 0
         try:

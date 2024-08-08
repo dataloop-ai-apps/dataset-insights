@@ -195,9 +195,13 @@ async def update_dataset(datasetId, itemId, background_tasks: BackgroundTasks):
     """
     logger.info('starting insights build (insights.run) in background. get status from /insights/status page')
     insights: Insights = insights_handler.get(dataset_id=datasetId)
-    background_tasks.add_task(build_in_background,
-                              insights=insights,
-                              item_id=itemId)
+    if insights.build_status in ("failed", "ready"):
+        insights.build_status = "starting"
+        insights.build_progress = 0
+        background_tasks.add_task(build_in_background,
+                                  insights=insights,
+                                  item_id=itemId)
+
     return HTMLResponse(json.dumps({'status': 'started'}), status_code=200)
 
 
