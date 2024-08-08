@@ -184,8 +184,8 @@ class GraphsCalculator:
                             labels=dict(x="Normalized Width", y="Normalized Height", color="density"),
                             )
             # Update x and y axes to hide tick labels
-            fig.update_xaxes(title_text="Custom X Axis", showticklabels=False)
-            fig.update_yaxes(title_text="Custom Y Axis", showticklabels=False)
+            fig.update_xaxes(title_text="Normalized Width", showticklabels=False)
+            fig.update_yaxes(title_text="Normalized Height", showticklabels=False)
             self._fig_heatmap_annotation_location = fig
         else:
             fig = self._fig_heatmap_annotation_location
