@@ -8,6 +8,7 @@ import json
 import time
 import tqdm
 import os
+import tempfile
 
 from dash import dcc
 import dash_bootstrap_components as dbc
@@ -37,73 +38,50 @@ class Insights:
         self.build_status = "ready"
         self.build_progress = 0
 
-    def download_export_from_item(self, export_item_id):
-        item = dl.items.get(item_id=export_item_id)
-        zip_path = item.download()
-
-        dl.miscellaneous.Zipping.unzip_directory(zip_filename=zip_path,
-                                                 to_directory=self.path)
-        os.remove(zip_path)
-
-    def collect_single_json(self, path, pbar, items_dict, annotations_dict):
-        item_id = ""
-        try:
-            with open(path) as f:
-                data = json.load(f)
-            item_id = data['id']
-            collection = dl.AnnotationCollection.from_json_file(path)
-            items_dict[item_id] = {
-                'item_id': data['id'],
-                'width': data.get('metadata', {}).get('system', {}).get('height', 0),
-                'height': data.get('metadata', {}).get('system', {}).get('height', 0),
-                'mimetype': data.get('metadata', {}).get('system', {}).get('mimetype', ''),
-                'size': data.get('metadata', {}).get('system', {}).get('size', 0)
-            }
-            for annotation in collection:
-                annotation: dl.Annotation
-                try:
-                    annotations_dict[annotation.id] = {
-                        'item_id': item_id,
-                        'type': annotation.type,
-                        'annotation_id': annotation.id,
-                        'label': annotation.label,
-                        'top': annotation.top,
-                        'left': annotation.left,
-                        'bottom': annotation.bottom,
-                        'right': annotation.right,
-                        'annotation_height': annotation.bottom - annotation.top,
-                        'annotation_width': annotation.right - annotation.left,
-                        'attributes': None,
-                    }
-                except Exception:
-                    logger.exception(f'failed in annotation: {annotation.id}')
-        except Exception as e:
-            logger.exception(f'failed in item: {item_id}')
-        finally:
-            pbar.update()
-            self.build_progress = min(pbar.n / pbar.total, 0.99)
-
-    def build_dataframe(self):
-        json_files = list(pathlib.Path(self.path).rglob('*.json'))
-        pool = ThreadPoolExecutor(max_workers=128)
-        pbar = tqdm.tqdm(total=len(json_files))
+    def build_dataframe(self, download_data):
+        pbar = tqdm.tqdm(total=len(download_data))
         items_dict = dict()
         annotations_dict = dict()
         t = time.time()
-        for filepath in json_files:
-            pool.submit(self.collect_single_json,
-                        path=filepath,
-                        pbar=pbar,
-                        items_dict=items_dict,
-                        annotations_dict=annotations_dict)
-        pool.shutdown()
+        for data in download_data:
+            item_id = data['id']
+            try:
+                items_dict[item_id] = {
+                    'item_id': data['id'],
+                    'width': data.get('metadata', {}).get('system', {}).get('height', 0),
+                    'height': data.get('metadata', {}).get('system', {}).get('height', 0),
+                    'mimetype': data.get('metadata', {}).get('system', {}).get('mimetype', ''),
+                    'size': data.get('metadata', {}).get('system', {}).get('size', 0)
+                }
+                collection = dl.AnnotationCollection.from_json(data['annotations'])
+                for annotation in collection:
+                    annotation: dl.Annotation
+                    try:
+                        annotations_dict[annotation.id] = {
+                            'item_id': item_id,
+                            'type': annotation.type,
+                            'annotation_id': annotation.id,
+                            'label': annotation.label,
+                            'top': annotation.top,
+                            'left': annotation.left,
+                            'bottom': annotation.bottom,
+                            'right': annotation.right,
+                            'annotation_height': annotation.bottom - annotation.top,
+                            'annotation_width': annotation.right - annotation.left,
+                            'attributes': None,
+                        }
+                    except Exception:
+                        logger.exception(f'failed in annotation: {annotation.id}')
+            except Exception as e:
+                logger.exception(f'failed in item: {item_id}')
+            finally:
+                pbar.update()
+                self.build_progress = min(pbar.n / pbar.total, 0.99)
 
         logger.info(f'files collection time: {(time.time() - t):.2f}[s]')
         t = time.time()
         self.items_df = pd.DataFrame(items_dict.values())
         self.annotations_df = pd.DataFrame(annotations_dict.values())
-        for filepath in json_files:
-            os.remove(filepath)
         logger.info(f'DataFrame load time: {(time.time() - t):.2f}[s]')
         logger.info(f'num dataset items: {self.dataset.items_count}')
         logger.info(f'num dataframe items: {self.items_df.shape[0]}')
@@ -221,9 +199,15 @@ class Insights:
                 self.export_item_id = export_item_id
                 self.build_status = "downloading"
                 if self.get_parquet_files() is not True:
-                    self.download_export_from_item(export_item_id=self.export_item_id)
+                    item = dl.items.get(item_id=self.export_item_id)
+
+                    with tempfile.TemporaryDirectory() as temp_dir:
+                        item_dir = item.download(local_path=temp_dir, save_locally=True)
+                        with open(item_dir, 'r') as f:
+                            download_data = json.load(f)
+
                     self.build_status = "building"
-                    self.build_dataframe()
+                    self.build_dataframe(download_data)
                     self.set_parquet_files()
                 self.gc.clear()
                 self.build_status = "creating"
