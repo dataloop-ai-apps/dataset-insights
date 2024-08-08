@@ -261,22 +261,20 @@ onMounted(() => {
 
 const pollStatus = async () => {
     const interval = 1000
-    const maxAttempts = 600 // max 10 minutes
+    const maxAttempts = 600
     let attempts = 0
 
-    return new Promise<boolean>((resolve, reject) => {
-        const intervalId = setInterval(async () => {
-            attempts++
-            const completed = await updateStatus()
-            if (completed) {
-                clearInterval(intervalId)
-                resolve(true)
-            } else if (attempts >= maxAttempts) {
-                clearInterval(intervalId)
-                reject(new Error('Max attempts reached'))
-            }
-        }, interval)
-    })
+    const checkStatus = async () => {
+        attempts++
+        const completed = await updateStatus()
+        if (completed || attempts >= maxAttempts) {
+            return
+        } else {
+            setTimeout(checkStatus, interval)
+        }
+    }
+
+    await checkStatus()
 }
 
 const pollBuildStatus = async () => {
@@ -284,19 +282,18 @@ const pollBuildStatus = async () => {
     const maxAttempts = 600 // max 10 minutes
     let attempts = 0
 
-    return new Promise<boolean>((resolve, reject) => {
-        const intervalId = setInterval(async () => {
-            attempts++
-            const completed = await getBuildStatus()
-            if (completed) {
-                clearInterval(intervalId)
-                resolve(true)
-            } else if (attempts >= maxAttempts) {
-                clearInterval(intervalId)
-                reject(new Error('Max attempts reached'))
-            }
-        }, interval)
-    })
+    const checkBuildStatus = async () => {
+        attempts++
+        const completed = await getBuildStatus()
+        if (completed || attempts >= maxAttempts) {
+            console.log('Build completed')
+            return
+        } else {
+            setTimeout(checkBuildStatus, interval)
+        }
+    }
+
+    await checkBuildStatus()
 }
 
 const runDatasetInsightGeneration = async () => {
