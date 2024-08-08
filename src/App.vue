@@ -259,42 +259,22 @@ onMounted(() => {
     })
 })
 
-const pollStatus = async () => {
-    const interval = 1000
-    const maxAttempts = 600
-    let attempts = 0
-
-    const checkStatus = async () => {
-        attempts++
-        const completed = await updateStatus()
-        if (completed || attempts >= maxAttempts) {
-            return
-        } else {
-            setTimeout(checkStatus, interval)
+const pollStatusWrapper = async (
+    checkStatus,
+    interval = 1000,
+    maxAttempts = 600
+) => {
+    for (let attempts = 0; attempts < maxAttempts; attempts++) {
+        if (await checkStatus()) {
+            return // Exit the loop if the build is complete
         }
+        await new Promise((resolve) => setTimeout(resolve, interval))
     }
-
-    await checkStatus()
+    console.log('Max attempts reached, exiting pollStatus')
 }
 
-const pollBuildStatus = async () => {
-    const interval = 1000
-    const maxAttempts = 600 // max 10 minutes
-    let attempts = 0
-
-    const checkBuildStatus = async () => {
-        attempts++
-        const completed = await getBuildStatus()
-        if (completed || attempts >= maxAttempts) {
-            console.log('Build completed')
-            return
-        } else {
-            setTimeout(checkBuildStatus, interval)
-        }
-    }
-
-    await checkBuildStatus()
-}
+const pollBuildStatus = () => pollStatusWrapper(getBuildStatus)
+const pollStatus = () => pollStatusWrapper(updateStatus)
 
 const runDatasetInsightGeneration = async () => {
     fetch(`/export/run?datasetId=${datasetId.value}`)

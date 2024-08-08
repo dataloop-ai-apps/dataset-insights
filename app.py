@@ -116,9 +116,8 @@ insights_handler = InsightsHandles()
 exporters_handler = ExporterHandles()
 
 
-def build_in_background(dataset_id, item_id):
-    logger.info(f'inside background. stating with item_id: {item_id} for dataset_id: {dataset_id}')
-    insights: Insights = insights_handler.get(dataset_id=dataset_id)
+def build_in_background(insights, item_id):
+    logger.info(f'inside background. stating with item_id: {item_id}')
     insights.run(export_item_id=item_id)
 
 
@@ -195,8 +194,9 @@ async def update_dataset(datasetId, itemId, background_tasks: BackgroundTasks):
     - JSON response indicating that the build is ready.
     """
     logger.info('starting insights build (insights.run) in background. get status from /insights/status page')
+    insights: Insights = insights_handler.get(dataset_id=datasetId)
     background_tasks.add_task(build_in_background,
-                              dataset_id=datasetId,
+                              insights=insights,
                               item_id=itemId)
     return HTMLResponse(json.dumps({'status': 'started'}), status_code=200)
 

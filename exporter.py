@@ -102,6 +102,7 @@ class Exporter:
         self.status = 'ready'
         self.export_item_id = item_id
         self.export_date = self.change_iso_date_string(annotation_zip_item.created_at[:-1])
+        self.save_finished_export(item_id)
         return annotation_zip_item
 
     def start_export(self):
@@ -183,3 +184,13 @@ class Exporter:
                 return item
 
         return None
+
+    def save_finished_export(self, item_id):
+        b_dataset = self.dataset.project.datasets._get_binaries_dataset()
+        buffer = io.BytesIO()
+        buffer.write(json.dumps({"OutputItemId": item_id}).encode('utf-8'))
+        buffer.name = f"{item_id}.json"
+        logger.info(f"Uploading outputItemId to /.dataloop/exports/fv_done_json/{self.dataset.id}")
+        b_dataset.items.upload(local_path=buffer,
+                               remote_path=f'/.dataloop/exports/fv_done_json/{self.dataset.id}',
+                               overwrite=True)
