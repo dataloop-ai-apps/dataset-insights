@@ -115,7 +115,7 @@ const loadFrame = async () => {
         }
 
         buttonLabel.value = 'Loading'
-        fetch(
+        await fetch(
             `/graph/build?datasetId=${datasetId.value}&itemId=${exportItemId.value}`
         )
         buildReady.value = false
@@ -277,7 +277,7 @@ const pollBuildStatus = () => pollStatusWrapper(getBuildStatus)
 const pollStatus = () => pollStatusWrapper(updateStatus)
 
 const runDatasetInsightGeneration = async () => {
-    fetch(`/export/run?datasetId=${datasetId.value}`)
+    await fetch(`/export/run?datasetId=${datasetId.value}`)
     await pollStatus()
     loadFrame()
 }
