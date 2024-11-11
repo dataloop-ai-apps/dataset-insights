@@ -29,6 +29,9 @@ class Insights:
         self.export_item_id = ''
         self.dataset = dl.datasets.get(dataset_id=self.dataset_id)
         # self.settings = {"theme": "minty"}
+        self.default_graph_config = {'displaylogo': False,  # Hide Plotly logo
+                                     'modeBarButtonsToRemove': ['toImage']  # Remove the download button
+                                     }
         self.settings = {"theme": "darkly"}
         self.divs = list()
         self.items_df = None
@@ -96,22 +99,27 @@ class Insights:
                                                           figure=self.gc.histogram_annotation_by_item(
                                                               df=self.annotations_df,
                                                               settings=self.settings),
-                                                          className="graph")),
+                                                          className="graph",
+                                                          config=self.default_graph_config)),
                               dbc.Card(children=dcc.Graph(id='graph-1-2',
                                                           className="graph",
                                                           figure=self.gc.pie_annotation_type(df=self.annotations_df,
-                                                                                             settings=self.settings)))
+                                                                                             settings=self.settings),
+                                                          config=self.default_graph_config
+                                       ))
                           ]),
             dbc.Container(className='card-container',
                           children=[
                               dbc.Card(children=dcc.Graph(id='graph-2-1',
                                                           className="graph",
                                                           figure=self.gc.bar_annotations_labels(df=self.annotations_df,
-                                                                                                settings=self.settings))),
+                                                                                                settings=self.settings),
+                                                          config=self.default_graph_config)),
                               dbc.Card(children=dcc.Graph(id='graph-2-2',
                                                           className="graph",
                                                           figure=self.gc.scatter_item_height_width(df=self.items_df,
-                                                                                                   settings=self.settings)))
+                                                                                                   settings=self.settings),
+                                                          config=self.default_graph_config))
                           ]
                           ),
             # dbc.Container(className='card-container',
@@ -135,7 +143,8 @@ class Insights:
                                                               annotations_df=self.annotations_df,
                                                               items_df=self.items_df,
                                                               settings=self.settings,
-                                                          ))),
+                                                          ),
+                                                          config=self.default_graph_config)),
                               dbc.Card(children=dcc.Graph(id='graph-4-2',
                                                           className="graph",
                                                           figure=self.gc.scatter_annotation_height_width(
@@ -143,7 +152,8 @@ class Insights:
                                                               settings=self.settings,
                                                               max_item_width=self.items_df['height'].max(),
                                                               max_item_height=self.items_df['height'].max(),
-                                                          )))
+                                                          ),
+                                                          config=self.default_graph_config))
                           ])
         ]
 
