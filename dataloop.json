@@ -1,92 +1,90 @@
 {
-  "version": "0.1.25",
-  "name": "dataset-insights",
-  "displayName": "Dataset Insights",
-  "description": "Provides insights on the dataset",
-  "attributes": {
-    "Provider": "Dataloop",
-    "Category": "Application",
-    "Application Type": "Data Management",
-    "License": "Apache 2.0"
-  },
-  "codebase": {
-    "type": "git",
-    "gitUrl": "https://github.com/dataloop-ai-apps/dataset-insights.git",
-    "gitTag": "0.1.25"
-  },
-  "scope": "public",
-  "components": {
-    "panels": [
-      {
-        "name": "insights",
-        "supportedSlots": [
-          {
-            "type": "datasetBrowser",
-            "configuration": {}
-          }
+    "version": "0.1.25",
+    "name": "dataset-insights",
+    "displayName": "Dataset Insights",
+    "description": "Provides insights on the dataset",
+    "attributes": {
+        "Provider": "Dataloop",
+        "Category": "Application",
+        "Application Type": "Data Management",
+        "License": "Apache 2.0"
+    },
+    "codebase": {
+        "type": "git",
+        "gitUrl": "https://github.com/dataloop-ai-apps/dataset-insights.git",
+        "gitTag": "0.1.25"
+    },
+    "scope": "public",
+    "components": {
+        "panels": [
+            {
+                "name": "insights",
+                "supportedSlots": [
+                    {
+                        "type": "datasetBrowser",
+                        "configuration": {}
+                    }
+                ],
+                "conditions": {}
+            }
         ],
-        "conditions": {}
-      }
-    ],
-    "toolbars": [
-      {
-        "displayName": "Insights",
-        "icon": "icon-dl-plus",
-        "invoke": {
-          "type": "panel",
-          "namespace": "insights"
-        },
-        "location": "datasetBrowserTab"
-      }
-    ],
-    "modules": [
-      {
-        "name": "insights",
-        "entryPoint": "main.py",
-        "className": "Runner",
-        "initInputs": [],
-        "config": {
-          "isCustomServer": true
-        },
-        "functions": [
-          {
-            "name": "run",
-            "output": [],
-            "input": []
-          }
+        "toolbars": [
+            {
+                "displayName": "Insights",
+                "icon": "icon-dl-plus",
+                "invoke": {
+                    "type": "panel",
+                    "namespace": "insights"
+                },
+                "location": "datasetBrowserTab"
+            }
+        ],
+        "modules": [
+            {
+                "name": "insights",
+                "entryPoint": "main.py",
+                "className": "Runner",
+                "initInputs": [],
+                "config": {
+                    "isCustomServer": true
+                },
+                "functions": [
+                    {
+                        "name": "run",
+                        "output": [],
+                        "input": []
+                    }
+                ]
+            }
+        ],
+        "services": [
+            {
+                "name": "insights-runner",
+                "displayName": "insights-runner",
+                "moduleName": "insights",
+                "panelNames": ["insights"],
+                "botUserName": "tab-apps@dataloop.ai",
+                "initParams": {},
+                "runtime": {
+                    "podType": "highmem-l",
+                    "numReplicas": 1,
+                    "concurrency": 10,
+                    "runnerImage": "gcr.io/viewo-g/piper/agent/cpu/dataset-insights:0.0.2",
+                    "singleAgent": false,
+                    "autoscaler": {
+                        "type": "rabbitmq",
+                        "minReplicas": 1,
+                        "maxReplicas": 1,
+                        "queueLength": 1
+                    },
+                    "preemptible": false,
+                    "executionTimeout": 3600,
+                    "drainTime": 600,
+                    "onReset": "failed",
+                    "runExecutionAsProcess": false
+                },
+                "maxAttempts": 3
+            }
         ]
-      }
-    ],
-    "services": [
-      {
-        "name": "insights-runner",
-        "displayName": "insights-runner",
-        "moduleName": "insights",
-        "panelNames": [
-          "insights"
-        ],
-        "botUserName": "tab-apps@dataloop.ai",
-        "initParams": {},
-        "runtime": {
-          "podType": "highmem-l",
-          "numReplicas": 1,
-          "concurrency": 10,
-          "runnerImage": "gcr.io/viewo-g/piper/agent/cpu/dataset-insights:0.0.1",
-          "singleAgent": false,
-          "autoscaler": {
-            "type": "rabbitmq",
-            "minReplicas": 1,
-            "maxReplicas": 1,
-            "queueLength": 1
-          },
-          "preemptible": false,
-          "executionTimeout": 3600,
-          "drainTime": 600,
-          "onReset": "failed",
-          "runExecutionAsProcess": false
-        },
-        "maxAttempts": 3
-      }
-    ]
-  }
+    }
 }
