@@ -10,7 +10,8 @@ RUN pip install --user  \
     dash-bootstrap-components \
     dash_bootstrap_templates \
     pyarrow \
-    fastparquet
+    fastparquet \
+    https://storage.googleapis.com/dtlpy/single-export-be/dtlpy_exporter-0.1.1-py3-none-any.whl
 
 
 

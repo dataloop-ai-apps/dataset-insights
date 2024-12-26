@@ -14,7 +14,8 @@
                     "
                 >
                     <DlTypography variant="h4">
-                        Last updated: {{ lastUpdated }}
+                        Last updated:
+                        {{ formattedLastUpdated }}
                     </DlTypography>
                     <DlButton
                         :label="buttonLabel"
@@ -82,7 +83,7 @@ const isReady = ref<boolean>(false)
 const buildReady = ref<boolean>(false)
 const downloadReady = ref<boolean>(false)
 const currentTheme = ref<ThemeType>(ThemeType.LIGHT)
-const lastUpdated = ref<string>('Never')
+const lastUpdated = ref<number>(0)
 const operationRunning = ref<boolean>(true)
 const buttonLabel = ref<string>('Run')
 const progressValue = ref<number>(0)
@@ -95,6 +96,17 @@ const ProgressMessage = ref<string>('Building Insights...')
 
 const isDark = computed<boolean>(() => {
     return currentTheme.value === ThemeType.DARK
+})
+
+const formattedLastUpdated = computed(() => {
+    const date = new Date(lastUpdated.value * 1000) // Convert to milliseconds
+    return new Intl.DateTimeFormat('default', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    }).format(date)
 })
 
 const loadFrame = async () => {
@@ -115,9 +127,6 @@ const loadFrame = async () => {
         }
 
         buttonLabel.value = 'Loading'
-        await fetch(
-            `/graph/build?datasetId=${datasetId.value}&itemId=${exportItemId.value}`
-        )
         buildReady.value = false
         await pollBuildStatus()
         contentIframe.value.src = `/dash/datasets?id=${datasetId.value}`
@@ -181,6 +190,7 @@ const handleInitialFrameLoading = async () => {
     buildReady.value = false
     try {
         if (datasetId.value) {
+            await fetch(`/export/run?datasetId=${datasetId.value}&cache=yes`)
             const existingStatus = await updateStatus()
             if (!existingStatus) {
                 await pollStatus()
@@ -277,7 +287,7 @@ const pollBuildStatus = () => pollStatusWrapper(getBuildStatus)
 const pollStatus = () => pollStatusWrapper(updateStatus)
 
 const runDatasetInsightGeneration = async () => {
-    await fetch(`/export/run?datasetId=${datasetId.value}`)
+    await fetch(`/export/run?datasetId=${datasetId.value}&cache=no`)
     await pollStatus()
     loadFrame()
 }
@@ -290,7 +300,6 @@ const debouncedRunDatasetInsightGeneration = debounce(
 async function onClick() {
     operationRunning.value = true
     buttonLabel.value = 'Running'
-    lastUpdated.value = new Date().toString().split(' ').slice(1, 5).join(' ')
     progressValue.value = 0
     buildPerc.value = 0
     downloadReady.value = false
