@@ -171,7 +171,7 @@ def build_status(datasetId):
     """
     exporter: Exporter = Exporter(dataset_id=datasetId)
     status = {
-        'status': exporter.build_status.value,
+        'status': exporter.build_status,
         'progress': exporter.build_progress,
     }
     logger.info("Returning status: %s", status)

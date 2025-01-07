@@ -19,25 +19,25 @@ logger = logging.getLogger('[INSIGHTS]')
 logging.basicConfig(level='INFO')
 
 
-class BuildStatus(Enum):
+class BuildStatus(str, Enum):
     """
     Enum class representing the various statuses of a build process.
 
     Attributes:
-        ready (str): The build is ready to start.
-        started (str): The build has started.
-        downloading (str): The build is in the process of downloading resources.
-        building (str): The build is in the process of being built.
-        creating (str): The build is in the process of creating resources.
-        failed (str): The build has failed.
+        READY (str): The build is ready to start.
+        STARTED (str): The build has started.
+        DOWNLOADING (str): The build is in the process of downloading resources.
+        BUILDING (str): The build is in the process of being built.
+        CREATING (str): The build is in the process of creating resources.
+        FAILED (str): The build has failed.
     """
 
-    ready = "ready"
-    started = "started"
-    downloading = "downloading"
-    building = "building"
-    creating = "creating"
-    failed = "failed"
+    READY = "ready"
+    STARTED = "started"
+    DOWNLOADING = "downloading"
+    BUILDING = "building"
+    CREATING = "creating"
+    FAILED = "failed"
 
 
 class Exporter(ExportBase):
@@ -92,7 +92,7 @@ class Exporter(ExportBase):
             self.annotations_df = None
             self.gc = GraphsCalculator()
             self.path = f'tmp/{self.dataset.id}/json'
-            self.build_status = BuildStatus.ready
+            self.build_status = BuildStatus.READY
             self.build_progress = 0
 
     def build_dataframe(self):
@@ -376,25 +376,25 @@ class Exporter(ExportBase):
             and sets the build progress to the exception traceback.
         """
         self.progress = 100
-        self.build_status = BuildStatus.started
+        self.build_status = BuildStatus.STARTED
         self.build_progress = 0
         try:
-            self.build_status = BuildStatus.downloading
+            self.build_status = BuildStatus.DOWNLOADING
             if self.get_parquet_files() is not True:
 
-                self.build_status = BuildStatus.building
+                self.build_status = BuildStatus.BUILDING
                 self.build_dataframe()
                 self.set_parquet_files()
             self.gc.clear()
-            self.build_status = BuildStatus.creating
+            self.build_status = BuildStatus.CREATING
             self.build_progress = 0.995
             self.divs = self.create_html()
 
-            self.build_status = BuildStatus.ready
+            self.build_status = BuildStatus.READY
             self.build_progress = 1
             self.items_df = None
             self.annotations_df = None
         except Exception as e:
-            self.build_status = BuildStatus.failed
+            self.build_status = BuildStatus.FAILED
             self.build_progress = traceback.format_exc()
             logger.exception('failed to process data: %s', e)
