@@ -2,14 +2,19 @@ FROM docker.io/dataloopai/dtlpy-agent:cpu.py3.10.opencv
 
 USER root
 
-# install node
+# Install required packages
 RUN apt-get update && apt-get install -y \
     software-properties-common \
-    npm \
-    nginx
+    curl \
+    nginx && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN npm install npm@latest -g && \
-    npm install n -g && \
+# Install Node.js and npm using n
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g npm@latest && \
+    npm install -g n && \
     n latest
 
 # create open ssl
@@ -18,8 +23,16 @@ RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout local.dataloop.a
 RUN cp local.dataloop.ai.crt /etc/ssl/certs/ & cp local.dataloop.ai.key /etc/ssl/private/
 
 WORKDIR /tmp/app
-COPY requirements.txt /tmp/app
-RUN pip install --user -r /tmp/app/requirements.txt
+RUN pip install --user  \
+    fastapi  \
+    uvicorn  \
+    plotly \
+    dash \
+    dash-bootstrap-components \
+    dash_bootstrap_templates \
+    pyarrow \
+    fastparquet \
+    https://storage.googleapis.com/dtlpy/single-export-be/dtlpy_exporter-0.1.1-py3-none-any.whl
 
 
 
