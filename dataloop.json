@@ -30,6 +30,7 @@
         ],
         "toolbars": [
             {
+                "name": "insights",
                 "displayName": "Insights",
                 "icon": "icon-dl-plus",
                 "invoke": {
