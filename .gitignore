@@ -10,3 +10,5 @@ node_modules
 *.dataloop
 *.ipynb
 /venv
+
+deploy.py
