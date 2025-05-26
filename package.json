@@ -1,7 +1,7 @@
 {
     "name": "dataset-insights",
     "private": true,
-    "version": "0.1.28",
+    "version": "0.1.29",
     "scripts": {
         "dev": "vite",
         "build": "vue-tsc --noEmit --skipLibCheck && vite build",
