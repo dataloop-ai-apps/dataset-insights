@@ -127,7 +127,7 @@ class Exporter(ExportBase):
                     'item_id': data['id'],
                     'width': data.get('metadata', {})
                     .get('system', {})
-                    .get('height', 0),
+                    .get('width', 0),
                     'height': data.get('metadata', {})
                     .get('system', {})
                     .get('height', 0),
